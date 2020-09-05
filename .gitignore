@@ -1,0 +1,5 @@
+info.log
+cfg.toml
+venv/
+__pycache__/
+Telemetr_auth_bot/
