@@ -62,7 +62,7 @@ def scan_users(data):
     :param data: SQL ответ
     :type data: List[tupple],
     :return: Список объектов пользователей
-    :rtype: List[user.Users]
+    :rtype: List[user.User]
     """
 
     users = []
