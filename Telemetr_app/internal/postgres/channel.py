@@ -1,18 +1,29 @@
 from dataclasses import dataclass
+from typing import List
+
 from Telemetr_app.internal.channels import channel
 from Telemetr_app.internal.postgres import postgres
 
 
 @dataclass
 class ChannelStorage(channel.Storage):
+    """Реализация абстрактного класса Storage канала
 
+    :param user: абстрактный класс канала
+    :type user: Storage
+    """
     db: postgres.DB
 
     get_channels_query = "SELECT * FROM channels ORDER BY id"
 
     get_channel_by_id_query = "SELECT * FROM channels WHERE id = %s"
 
-    def get_all(self):
+    def get_all(self) -> List[channel.Channel]:
+        """Метод получения списка каналов из БД
+
+        :return: Список каналов
+        :rtype: List[Channel]
+        """
         cursor = self.db.session.cursor()
         cursor.execute(self.get_channels_query)
         row = cursor.fetchall()
@@ -23,7 +34,14 @@ class ChannelStorage(channel.Storage):
     def create(self, channel):
         pass
 
-    def get_channel_by_id(self, id):
+    def get_channel_by_id(self, id: int) -> channel.Channel:
+        """Метод получения пользователя в базе данных
+
+        :param id: ID канала в БД
+        :type id: int
+        :return: Канал из БД
+        :rtype: Channel
+        """
         cursor = self.db.session.cursor()
         cursor.execute(self.get_channel_by_id_query, (id, ))
         row = cursor.fetchone()
@@ -33,7 +51,14 @@ class ChannelStorage(channel.Storage):
             return None
 
 
-def scan_channel(data):
+def scan_channel(data: tuple) -> channel.Channel:
+    """Преобразование SQL ответа в объект Channel
+
+    :param data: SQL ответ
+    :type data: tuple
+    :return: Объект канала
+    :rtype: Channel
+    """
     return channel.Channel(
         id=data[0],
         username=data[1],
@@ -48,13 +73,13 @@ def scan_channel(data):
     )
 
 
-def scan_channels(data):
-    """Функция преобразовния SQL ответа в список объектов Channels
+def scan_channels(data: List[tuple]) -> List[channel.Channel]:
+    """Функция преобразовния SQL ответа в список объектов Channel
 
     :param data: SQL ответ из базы
-    :type data: List[tupple]
+    :type data: List[tuple]
     :return: Список каналов
-    :rtype: Channel[channel.Channel]
+    :rtype: List[Channel]
     """
     channels = []
     for row in data:
@@ -70,6 +95,6 @@ def new_storage(db: postgres.DB) -> ChannelStorage:
     :param db: объект базы данных
     :type db: postgres.DB
     :return: объект хранилища каналов
-    :rtype: user.User
+    :rtype: User
     """
     return ChannelStorage(db=db)

@@ -10,7 +10,7 @@ class UserStorage(user.Storage):
     """Реализация абстрактного класса Storage пользователя
 
     :param user: абстрактный класс пользователя
-    :type user: user.Storage
+    :type user: Storage
     """
     db: postgres.DB
 
@@ -22,7 +22,7 @@ class UserStorage(user.Storage):
         """Метод добавления нового пользователя
 
         :param user: [description]
-        :type user: user.User
+        :type user: User
         """
         pass
 
@@ -30,7 +30,7 @@ class UserStorage(user.Storage):
         """Метод получения всех пользователей в базе данных
 
         :return: Список пользователей
-        :rtype: user.User
+        :rtype: User
         """
         cursor = self.db.session.cursor()
         cursor.execute(self.get_users_query)
@@ -39,11 +39,13 @@ class UserStorage(user.Storage):
 
         return u
 
-    def get_user_by_id(self, id):
+    def get_user_by_id(self, id: int) -> user.User:
         """Метод получения пользователя в базе данных
 
         :param id: ID пользователя
         :type id: int
+        :return: Пользователь из БД
+        :rtype: User
         """
         cursor = self.db.session.cursor()
         cursor.execute(self.get_user_query, (id, ))
@@ -54,13 +56,13 @@ class UserStorage(user.Storage):
             return None
 
 
-def scan_user(data) -> user.User:
+def scan_user(data: tuple) -> user.User:
     """Преобразование SQL ответа в объект
 
     :param data: SQL ответ
-    :type data: tupple
+    :type data: tuple
     :return: Объект пользователя
-    :rtype: user.Users
+    :rtype: Users
     """
     return user.User(
         id=data[0],
@@ -68,15 +70,14 @@ def scan_user(data) -> user.User:
     )
 
 
-def scan_users(data):
+def scan_users(data: List[tuple]) -> List[user.User]:
     """Функция преобразования SQL ответа в список объектов Users
 
     :param data: SQL ответ
     :type data: List[tupple],
     :return: Список объектов пользователей
-    :rtype: List[user.User]
+    :rtype: List[User]
     """
-
     users = []
     for row in data:
         user = scan_user(row)
@@ -91,6 +92,6 @@ def new_storage(db: postgres.DB) -> UserStorage:
     :param db: объект базы данных
     :type db: postgres.DB
     :return: объект хранилища продуктов
-    :rtype: user.User
+    :rtype: User
     """
     return UserStorage(db=db)
