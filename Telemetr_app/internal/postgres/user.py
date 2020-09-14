@@ -14,9 +14,11 @@ class UserStorage(user.Storage):
     """
     db: postgres.DB
 
-    get_users_query = "SELECT * FROM USERS"
+    get_users_query = "SELECT * FROM users"
 
-    def insert(self, user: user.User):
+    get_user_query = "SELECT * FROM users WHERE id = %s ORDER BY id"
+
+    def create(self, user: user.User):
         """Метод добавления нового пользователя
 
         :param user: [description]
@@ -33,13 +35,23 @@ class UserStorage(user.Storage):
         cursor = self.db.session.cursor()
         cursor.execute(self.get_users_query)
         row = cursor.fetchall()
-        print(row)
         u = scan_users(row)
 
         return u
 
-    def find_user_by_id(self, id):
-        pass
+    def get_user_by_id(self, id):
+        """Метод получения пользователя в базе данных
+
+        :param id: ID пользователя
+        :type id: int
+        """
+        cursor = self.db.session.cursor()
+        cursor.execute(self.get_user_query, (id, ))
+        row = cursor.fetchone()
+        if row is not None:
+            return scan_user(row)
+        else:
+            return None
 
 
 def scan_user(data) -> user.User:

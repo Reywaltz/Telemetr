@@ -8,30 +8,29 @@ class ChannelStorage(channel.Storage):
 
     db: postgres.DB
 
-    get_channels_query = "SELECT * FROM channels"
+    get_channels_query = "SELECT * FROM channels ORDER BY id"
 
-    get_channels_by_id = "SELECT * FROM channels WHERE id = %s"
+    get_channel_by_id_query = "SELECT * FROM channels WHERE id = %s"
 
     def get_all(self):
-        pass
-        # cursor = self.db.session.cursor()
-        # cursor.execute(self.get_channels_query)
-        # row = cursor.fetchall()
-        # ch = scan_channels(row)
+        cursor = self.db.session.cursor()
+        cursor.execute(self.get_channels_query)
+        row = cursor.fetchall()
+        ch_list = scan_channels(row)
 
-        # return ch
+        return ch_list
 
     def create(self, channel):
         pass
 
-    def find_сhannel_by_id(self, id):
-        pass
-        # cursor = self.db.session.cursor()
-        # cursor.execute(self.get_channel_by_id, (id, ))
-        # row = cursor.fetchone()
-        # ch = scan_channel(row)
-
-        # return ch
+    def get_channel_by_id(self, id):
+        cursor = self.db.session.cursor()
+        cursor.execute(self.get_channel_by_id_query, (id, ))
+        row = cursor.fetchone()
+        if row is not None:
+            return scan_channel(row)
+        else:
+            return None
 
 
 def scan_channel(data):

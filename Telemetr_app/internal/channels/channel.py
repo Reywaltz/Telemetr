@@ -44,7 +44,7 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def find_сhannel_by_id(self, id: int) -> Channel:
+    def get_channel_by_id(self, id: int) -> Channel:
         """Метод поиска канала по его ID в базе данных
 
         :param id: ID канала

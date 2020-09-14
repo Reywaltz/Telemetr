@@ -17,7 +17,7 @@ class User:
 class Storage(ABC):
     """Абстрактный класс пользователя"""
     @abstractmethod
-    def insert(self, user: User):
+    def create(self, user: User):
         """Метод  нового юзера
 
         :param user: Новый пользователь
@@ -26,7 +26,7 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def find_user_by_id(self, id: int) -> User:
+    def get_user_by_id(self, id: int) -> User:
         """Метод поиска пользователя по его ID в базе данных
 
         :param id: ID пользователя

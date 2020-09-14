@@ -3,8 +3,10 @@ from flask import Flask
 from flask_cors import CORS
 from flask_restful import Api
 
-from Telemetr_app.handlers.api import UserResource, ChannelResource
-from Telemetr_app.internal.postgres import postgres, user, channel
+from Telemetr_app.handlers.api import (CategoryListResource,
+                                       ChannelListResource, ChannelResource,
+                                       UserListResource, UserResource)
+from Telemetr_app.internal.postgres import channel, postgres, user, category
 from Telemetr_app.pkg.log import filelogger
 
 cfg = toml.load("cfg.toml")
@@ -35,12 +37,22 @@ cfgDB = configDB(cfg)
 db = postgres.new(cfg=cfgDB, logger=logger)
 user_storage = user.new_storage(db)
 channel_storage = channel.new_storage(db)
+category_storage = category.new_storage(db)
 
-api.add_resource(UserResource, "/api/v1/user",
+api.add_resource(UserResource, "/api/v1/user/<int:id>",
                  resource_class_args=(logger, user_storage, ))
 
-api.add_resource(ChannelResource, "/api/v1/channel",
+api.add_resource(UserListResource, "/api/v1/user",
+                 resource_class_args=(logger, user_storage, ))                 
+
+api.add_resource(ChannelResource, "/api/v1/channel/<int:id>",
                  resource_class_args=(logger, channel_storage, ))
+
+api.add_resource(ChannelListResource, "/api/v1/channel",
+                 resource_class_args=(logger, channel_storage, ))
+
+api.add_resource(CategoryListResource, "/api/v1/category",
+                 resource_class_args=(logger, category_storage, ))
 
 if __name__ == "__main__":
     app.run(debug=cfg.get("run").get("debug"),
