@@ -3,3 +3,5 @@ cfg.toml
 venv/
 __pycache__/
 Telemetr_app/Auth_bot/*.toml
+Telemetr.session
+Telemetr.session-journal
