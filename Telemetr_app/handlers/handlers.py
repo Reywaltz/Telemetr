@@ -22,19 +22,20 @@ class Handler:
     def create_routes(self):
         """Метод инициализации рутов"""
         self.api.add_resource(userapi.UserResource, "/api/v1/user/<int:id>",
-                 resource_class_args=(self.logger, self.user_storage, ))
+                              resource_class_args=(self.logger, self.user_storage, ))
 
         self.api.add_resource(userapi.UserListResource, "/api/v1/user",
-                        resource_class_args=(self.logger, self.user_storage, ))                 
+                              resource_class_args=(self.logger, self.user_storage, ))                 
 
         self.api.add_resource(channelapi.ChannelResource, "/api/v1/channel/<int:id>",
-                        resource_class_args=(self.logger, self.channel_storage, ))
+                              resource_class_args=(self.logger, self.channel_storage, ))
 
         self.api.add_resource(channelapi.ChannelListResource, "/api/v1/channel",
-                        resource_class_args=(self.logger, self.channel_storage, ))
+                              resource_class_args=(self.logger, self.channel_storage, ))
 
         self.api.add_resource(categoryapi.CategoryListResource, "/api/v1/category",
-                        resource_class_args=(self.logger, self.category_storage, ))
+                              resource_class_args=(self.logger, self.category_storage, ))
+
 
 def new_handler(logger: logger.Logger, api: Api, user_storage: user.Storage,
                 channel_storage: channel.Storage, category_storage: category.Storage) -> Handler:

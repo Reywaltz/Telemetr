@@ -7,9 +7,6 @@ from Telemetr_app.handlers import handlers
 from Telemetr_app.internal.postgres import category, channel, postgres, user
 from Telemetr_app.pkg.log import filelogger
 
-from client import Fetcher
-
-
 cfg = toml.load("cfg.toml")
 api_id = cfg.get("client").get("api_id")
 api_hash = cfg.get("client").get("api_hash")
@@ -31,15 +28,14 @@ def configDB(cfg):
 
 logger = filelogger.new_logger("file_log")
 
-
 app = Flask(__name__,
             instance_relative_config=cfg.get("secret_key").get("secret_key"))
-
 
 CORS(app)
 api = Api(app)
 
 cfgDB = configDB(cfg)
+
 db = postgres.new(cfg=cfgDB, logger=logger)
 user_storage = user.new_storage(db)
 channel_storage = channel.new_storage(db)
@@ -50,7 +46,6 @@ handlers = handlers.new_handler(logger, api,
                                 channel_storage,
                                 category_storage)
 handlers.create_routes()
-fetcher = Fetcher(client, channel_storage)
 
 if __name__ == "__main__":
     app.run(debug=cfg.get("run").get("debug"),

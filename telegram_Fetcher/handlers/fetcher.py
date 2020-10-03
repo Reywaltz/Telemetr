@@ -1,7 +1,8 @@
 import datetime
 import pprint
 from dataclasses import dataclass
-
+from pkg.log import logger
+from internal.channels import channel
 import pytz
 import toml
 from pyrogram import Client
@@ -18,9 +19,9 @@ client = Client('Telemetr', api_id, api_hash)
 
 @dataclass
 class Fetcher:
-    # logger: logger.Logger
+    logger: logger.Logger
     client: Client
-    # channel_storage: channel.Storage
+    channel_storage: channel.Storage
 
     async def get_stats(self):
         data = []
