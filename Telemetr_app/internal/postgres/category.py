@@ -26,7 +26,7 @@ class CategoryStorage(category.Storage):
         cursor.execute(self.get_categories_query)
         row = cursor.fetchall()
         ch_list = scan_categories(row)
-        
+
         return ch_list
 
     def create(self, category):
