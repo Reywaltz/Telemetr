@@ -2,7 +2,7 @@ import psycopg2
 
 from dataclasses import dataclass
 
-from Telemetr_app.pkg.log import logger
+from pkg.log import logger
 
 
 @dataclass

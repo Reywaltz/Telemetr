@@ -1,8 +1,9 @@
 from flask_restful import Resource
-from Telemetr_app.internal.postgres import user, channel, category
-from Telemetr_app.pkg.log import logger
+from internal.postgres import user, channel, category
+from pkg.log import logger
 
-class ChannelResource(Resource):
+
+class ChannelResource:
     def __init__(self,
                  logger: logger.Logger,
                  channel_storage: channel.ChannelStorage):
@@ -23,7 +24,8 @@ class ChannelResource(Resource):
         else:
             return {"error": "not found"}, 404
 
-class ChannelListResource(Resource):
+
+class ChannelListResource:
     def __init__(self,
                  logger: logger.Logger,
                  channel_storage: channel.ChannelStorage):
@@ -41,4 +43,4 @@ class ChannelListResource(Resource):
         for item in res:
             channel_res.append(item.to_json())
 
-        return channel_res, 200
+        return dict(channel_res), 200

@@ -1,6 +1,6 @@
 import logging
 
-from Telemetr_app.pkg.log.logger import Logger
+from pkg.log.logger import Logger
 
 
 class STDLogger(Logger):

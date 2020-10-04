@@ -1,8 +1,8 @@
 from dataclasses import dataclass
 from typing import List
 
-from Telemetr_app.internal.categories import category
-from Telemetr_app.internal.postgres import postgres
+from internal.categories import category
+from internal.postgres import postgres
 
 
 @dataclass

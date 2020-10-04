@@ -1,10 +1,10 @@
 from flask_restful import Resource
 
-from Telemetr_app.internal.postgres import category, channel, user
-from Telemetr_app.pkg.log import logger
+from internal.postgres import category, channel, user
+from pkg.log import logger
 
 
-class UserResource(Resource):
+class UserResource:
     def __init__(self,
                  logger: logger.Logger,
                  user_storage: user.UserStorage):
@@ -25,7 +25,7 @@ class UserResource(Resource):
         else:
             return {"error": "not found"}, 404
 
-class UserListResource(Resource):
+class UserListResource:
     def __init__(self,
                  logger: logger.Logger,
                  user_storage: user.UserStorage):

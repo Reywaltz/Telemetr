@@ -1,10 +1,10 @@
 from flask_restful import Resource
 
-from Telemetr_app.internal.postgres import category, channel, user
-from Telemetr_app.pkg.log import logger
+from internal.postgres import category, channel, user
+from pkg.log import logger
 
 
-class CategoryListResource(Resource):
+class CategoryListResource:
     def __init__(self,
                  logger: logger.Logger,
                  category_storage: category.CategoryStorage):
