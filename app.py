@@ -2,7 +2,7 @@ import toml
 from flask import Flask
 from flask_cors import CORS
 from pyrogram import Client
-from Telemetr_app.handlers import handlers
+from apps.Telemetr_app.api import handlers
 from internal.postgres import category, channel, postgres, user
 from pkg.log import filelogger
 
@@ -31,7 +31,6 @@ app = Flask(__name__,
             instance_relative_config=cfg.get("secret_key").get("secret_key"))
 
 CORS(app)
-# api = Api(app)
 
 cfgDB = configDB(cfg)
 

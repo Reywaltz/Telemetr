@@ -1,10 +1,10 @@
 import toml
 from pyrogram import Client
-from handlers import fetcher
+from apps.telegram_Fetcher import fetcher
 from internal.postgres import channel, postgres
 from pkg.log import filelogger
 
-cfg = toml.load("telegram_Fetcher/fetch_cfg.toml")
+cfg = toml.load("cfg.toml")
 api_id = cfg.get("client").get("api_id")
 api_hash = cfg.get("client").get("api_hash")
 

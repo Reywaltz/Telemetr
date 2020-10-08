@@ -62,3 +62,12 @@ class Storage(ABC):
         :rtype: List[Channel]
         """
         pass
+
+    @abstractmethod
+    def update_data_from_fetcher(self, channel: Channel):
+        """Метод обновления данных каналов из Телеграм клиента
+
+        :param channel: Объект канала
+        :type channel: Channel
+        """
+        pass

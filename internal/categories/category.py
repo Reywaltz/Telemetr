@@ -26,4 +26,5 @@ class Storage(ABC):
 
     @abstractmethod
     def get_all(self) -> List[Category]:
+        """Метод получения всех категорий"""
         pass

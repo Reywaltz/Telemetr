@@ -4,6 +4,12 @@ from typing import List
 from internal.channels import channel
 from internal.postgres import postgres
 
+insert_channel_fields = "chat_id, owner, name, " + \
+                             "tg_link, category, sub_count, " + \
+                             "avg_coverage, er, cpm, post_price"
+
+select_all_channel_fields = "id, " + insert_channel_fields
+
 
 @dataclass
 class ChannelStorage(channel.Storage):
@@ -17,6 +23,10 @@ class ChannelStorage(channel.Storage):
     get_channels_query = "SELECT * FROM channels ORDER BY id"
 
     get_channel_by_id_query = "SELECT * FROM channels WHERE id = %s"
+
+    update_channel_fields_query = "UPDATE channels SET sub_count=%s, \
+                                   avg_coverage=%s, er=%s \
+                                   WHERE tg_link=%s RETURNING id"
 
     def get_all(self) -> List[channel.Channel]:
         """Метод получения списка каналов из БД
@@ -49,6 +59,24 @@ class ChannelStorage(channel.Storage):
             return scan_channel(row)
         else:
             return None
+
+    def update_data_from_fetcher(self, channel: channel.Channel):
+        """Метод обновления данных каналов из Телеграм клиента
+
+        :param channel: Объект канала
+        :type channel: Channel
+        """
+        try:
+            cursor = self.db.session.cursor()
+            cursor.execute(
+                self.update_channel_fields_query, (channel.sub_count,
+                                                   channel.avg_coverage,
+                                                   channel.er,
+                                                   channel.tg_link))
+
+            self.db.session.commit()
+        except Exception:
+            self.db.session.rollback()
 
 
 def scan_channel(data: tuple) -> channel.Channel:
