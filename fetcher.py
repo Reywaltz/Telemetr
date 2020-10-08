@@ -1,6 +1,6 @@
 import toml
 from pyrogram import Client
-from apps.telegram_Fetcher import fetcher
+from apps.Fetcher import fetcher
 from internal.postgres import channel, postgres
 from pkg.log import filelogger
 
