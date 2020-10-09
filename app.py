@@ -43,6 +43,7 @@ handlers = handlers.new_handler(logger, app,
                                 user_storage,
                                 channel_storage,
                                 category_storage)
+
 handlers.create_routes()
 
 if __name__ == "__main__":

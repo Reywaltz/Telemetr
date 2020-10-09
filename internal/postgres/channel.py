@@ -41,7 +41,12 @@ class ChannelStorage(channel.Storage):
 
         return ch_list
 
-    def create(self, channel):
+    def create(self, channel: channel.Channel):
+        """Метод добавления канала в БД
+
+        :param channel: Объект канала
+        :type channel: Channel
+        """
         pass
 
     def get_channel_by_id(self, id: int) -> channel.Channel:

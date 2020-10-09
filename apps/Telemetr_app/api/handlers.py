@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 
-from flask import Flask, jsonify
+from flask import Flask, jsonify, request
 from internal.categories import category
 from internal.channels import channel
 from internal.users import user
@@ -28,6 +28,11 @@ class Handler:
         self.app.add_url_rule("/api/v1/category",
                               "get_categories",
                               self.get_categories)
+
+        self.app.add_url_rule("/api/v1/category",
+                              "add_category",
+                              self.add_category,
+                              methods=["POST"])
 
         self.app.add_url_rule("/api/v1/user",
                               "users_get",
@@ -104,6 +109,25 @@ class Handler:
 
         return jsonify(user_res), 200
 
+    def add_category(self):
+        """POST запрос на вставку категории
+
+        :return: Результат запроса
+        :rtype: JSON
+        """
+        data = request.get_json()
+        if data is None:
+            return {"error": "empty data"}, 404
+        try:
+            _category = category.Category(data['category'])
+            if self.category_storage.insert(_category):
+                self.logger.info(f"Добавлена категория {_category.name}")
+                return {"success": "new category added"}, 200
+            else:
+                return {"error": "category already exists"}, 404
+        except KeyError:
+            return {"error": "wrong json format"}, 404
+
 
 def new_handler(logger: logger.Logger, app: Flask,
                 user_storage: user.Storage,
@@ -113,8 +137,8 @@ def new_handler(logger: logger.Logger, app: Flask,
 
     :param logger: Логгер проекта
     :type logger: logger.Logger
-    :param api: Обёртка на приложение flask-a через flask-restful
-    :type api: flask_restful.Api
+    :param app: Приложение Flask
+    :type app: Flask
     :param user_storage: Хранилище пользователей
     :type user_storage: user.Storage
     :param channel_storage: Хранилище каналов

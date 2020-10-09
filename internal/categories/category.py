@@ -8,7 +8,7 @@ class Category:
     """Класс пользователя"""
     name: str
 
-    def to_json(self):
+    def to_json(self) -> dict:
         """Метод представления объекта в JSON"""
         return {"name": self.name}
 
@@ -16,7 +16,7 @@ class Category:
 class Storage(ABC):
     """Абстрактный класс категорий"""
     @abstractmethod
-    def create(self, category: Category):
+    def insert(self, category: Category):
         """Метод создания новой категории
 
         :param user: Новая категория
