@@ -48,11 +48,22 @@ class Handler:
         :return: Список каналов
         :rtype: JSON
         """
+        url_params = request.args
+        res = self.channel_storage.get_all(
+            url_params.get("min_subcribers", 0, type=int),
+            url_params.get("max_subcribers", 9999999999, type=int),
+            url_params.get("min_views", 0, type=int),
+            url_params.get("max_views", 9999999999, type=int),
+            url_params.get("min_er", 0, type=int),
+            url_params.get("max_er", 9999999999, type=int),
+            url_params.get("min_cost", 0, type=int),
+            url_params.get("max_cost", 9999999999, type=int),
+            url_params.get("tg_link", "%%", type=str) + "%",
+            url_params.get("tg_name", "%%", type=str) + "%"
+        )
         channel_res = []
-        res = self.channel_storage.get_all()
         for item in res:
             channel_res.append(item.to_json())
-
         return jsonify(channel_res), 200
 
     def get_channel(self, id):

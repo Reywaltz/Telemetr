@@ -4,38 +4,106 @@ from typing import List
 from internal.channels import channel
 from internal.postgres import postgres
 
-insert_channel_fields = "chat_id, owner, name, " + \
-                             "tg_link, category, sub_count, " + \
-                             "avg_coverage, er, cpm, post_price"
+insert_channel_fields = "owner, name, " + \
+                        "tg_link, category, sub_count, " + \
+                        "avg_coverage, er, cpm, post_price"
 
 select_all_channel_fields = "id, " + insert_channel_fields
+
+
+er_range = "(er between %s and %s)"
+avg_coverage_range = "(avg_coverage between %s and %s)"
+cpm_range = "(cpm between %s and %s)"
+sub_count_range = "(sub_count between %s and %s)"
+post_price_range = "(post_price between %s and %s)"
+tg_link_search = "(tg_link ILIKE %s)"
+tg_name_search = "(name ILIKE %s)"
 
 
 @dataclass
 class ChannelStorage(channel.Storage):
     """Реализация абстрактного класса Storage канала
 
-    :param user: абстрактный класс канала
-    :type user: Storage
+    :param user:
+        Абстрактный класс канала
+        :type user: Storage
     """
     db: postgres.DB
 
-    get_channels_query = "SELECT * FROM channels ORDER BY id"
+    get_channels_query = f"select {select_all_channel_fields} from channels \
+                          where {sub_count_range} and \
+                          {avg_coverage_range} and \
+                          {er_range} and \
+                          {post_price_range} and \
+                          {tg_link_search} and \
+                          {tg_name_search} \
+                          order by id"
 
-    get_channel_by_id_query = "SELECT * FROM channels WHERE id = %s"
+    get_channel_by_id_query = f"SELECT {select_all_channel_fields} \
+                               FROM channels WHERE id = %s"
 
     update_channel_fields_query = "UPDATE channels SET sub_count=%s, \
                                    avg_coverage=%s, er=%s \
                                    WHERE tg_link=%s RETURNING id"
 
-    def get_all(self) -> List[channel.Channel]:
-        """Метод получения списка каналов из БД
+    def get_all(self,
+                min_subcribers=0,
+                max_subscribers=9999999999,
+                min_views=0,
+                max_views=9999999999,
+                min_er=0,
+                max_er=9999999999,
+                min_cost=0,
+                max_cost=9999999999,
+                tg_link="%%",
+                name="%%") -> List[channel.Channel]:
+        """Метод получения списка каналов из БД с параметрами фильтрации
 
+        :param min_subcribers:
+            Минимальное число подписчиков на канале, defaults: 0
+            :type min_subcribers: int, optional
+        :param max_subscribers:
+            Максимальное число подписчиков на канале, default: 9999999999
+            :type max_subscribers: int, optional
+        :param min_views:
+            Минимальное число просмотров на канале, default: 0
+            :type min_views: int, optional
+        :param max_views:
+            Максимальное число просмотров на канале, default: 9999999999
+            :type max_views: int, optional
+        :param min_er:
+            Минимальное параметр ER на канале, default: 0
+            :type min_er: int, optional
+        :param max_er:
+            Максимальный параметр ER на канале, default: 9999999999
+            :type max_er: int, optional
+        :param min_cost:
+            Минимальное значение стоймости просмотора на канале, default: 0
+            :type min_cost: int, optional
+        :param max_cost:
+            Максимальное значение стоймости просмотора на канале,
+            default: 9999999999
+            :type max_cost: int, optional
+        :param tg_link:
+            Ссылка на телеграмм канал без @, defaults to "%%"
+            :type tg_link: str, optional
+        :param name:
+            Имя канала, defaults to "%%"
+            :type name: str, optional
         :return: Список каналов
         :rtype: List[Channel]
         """
         cursor = self.db.session.cursor()
-        cursor.execute(self.get_channels_query)
+        cursor.execute(self.get_channels_query, (min_subcribers,
+                                                 max_subscribers,
+                                                 min_views,
+                                                 max_views,
+                                                 min_er,
+                                                 max_er,
+                                                 min_cost,
+                                                 max_cost,
+                                                 tg_link,
+                                                 name))
         row = cursor.fetchall()
         ch_list = scan_channels(row)
 
