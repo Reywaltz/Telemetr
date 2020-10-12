@@ -11,6 +11,9 @@ insert_channel_fields = "owner, name, " + \
 select_all_channel_fields = "id, " + insert_channel_fields
 
 
+default_limit = 15
+default_offset = 0
+
 er_range = "(er between %s and %s)"
 avg_coverage_range = "(avg_coverage between %s and %s)"
 cpm_range = "(cpm between %s and %s)"
@@ -18,6 +21,8 @@ sub_count_range = "(sub_count between %s and %s)"
 post_price_range = "(post_price between %s and %s)"
 tg_link_search = "(tg_link ILIKE %s)"
 tg_name_search = "(name ILIKE %s)"
+limit_value = "%s"
+offset_value = "%s"
 
 
 @dataclass
@@ -30,14 +35,16 @@ class ChannelStorage(channel.Storage):
     """
     db: postgres.DB
 
-    get_channels_query = f"select {select_all_channel_fields} from channels \
-                          where {sub_count_range} and \
-                          {avg_coverage_range} and \
-                          {er_range} and \
-                          {post_price_range} and \
-                          {tg_link_search} and \
+    get_channels_query = f"SELECT {select_all_channel_fields} FROM channels \
+                          WHERE {sub_count_range} AND \
+                          {avg_coverage_range} AND \
+                          {er_range} AND \
+                          {post_price_range} AND \
+                          {tg_link_search} AND \
                           {tg_name_search} \
-                          order by id"
+                          ORDER BY id \
+                          LIMIT {limit_value} \
+                          OFFSET {offset_value}"
 
     get_channel_by_id_query = f"SELECT {select_all_channel_fields} \
                                FROM channels WHERE id = %s"
@@ -56,7 +63,9 @@ class ChannelStorage(channel.Storage):
                 min_cost=0,
                 max_cost=9999999999,
                 tg_link="%%",
-                name="%%") -> List[channel.Channel]:
+                name="%%",
+                limit=default_limit,
+                offset=default_offset) -> List[channel.Channel]:
         """Метод получения списка каналов из БД с параметрами фильтрации
 
         :param min_subcribers:
@@ -103,7 +112,9 @@ class ChannelStorage(channel.Storage):
                                                  min_cost,
                                                  max_cost,
                                                  tg_link,
-                                                 name))
+                                                 name,
+                                                 limit,
+                                                 offset))
         row = cursor.fetchall()
         ch_list = scan_channels(row)
 

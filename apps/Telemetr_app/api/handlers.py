@@ -3,6 +3,7 @@ from dataclasses import dataclass
 from flask import Flask, jsonify, request
 from internal.categories import category
 from internal.channels import channel
+from internal.postgres.channel import default_limit, default_offset
 from internal.users import user
 from pkg.log import logger
 
@@ -49,7 +50,7 @@ class Handler:
         :rtype: JSON
         """
         url_params = request.args
-        res = self.channel_storage.get_all(
+        channels = self.channel_storage.get_all(
             url_params.get("min_subcribers", 0, type=int),
             url_params.get("max_subcribers", 9999999999, type=int),
             url_params.get("min_views", 0, type=int),
@@ -59,12 +60,16 @@ class Handler:
             url_params.get("min_cost", 0, type=int),
             url_params.get("max_cost", 9999999999, type=int),
             url_params.get("tg_link", "%%", type=str) + "%",
-            url_params.get("tg_name", "%%", type=str) + "%"
+            url_params.get("tg_name", "%%", type=str) + "%",
+            url_params.get("limit", default_limit, type=int),
+            url_params.get("offset", default_offset, type=int)
         )
+
         channel_res = []
-        for item in res:
+        for item in channels:
             channel_res.append(item.to_json())
-        return jsonify(channel_res), 200
+        res = {"count": len(channels), "items": channel_res}
+        return res, 200
 
     def get_channel(self, id):
         """Метод GET для информации о канале
