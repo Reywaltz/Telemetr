@@ -5,6 +5,7 @@ from pyrogram import Client
 from apps.Telemetr_app.api import handlers
 from internal.postgres import category, channel, postgres, user
 from pkg.log import filelogger
+# from apps.Telemetr_app.api import additions
 
 cfg = toml.load("cfg.toml")
 api_id = cfg.get("client").get("api_id")

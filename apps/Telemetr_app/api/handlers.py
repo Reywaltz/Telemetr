@@ -1,6 +1,7 @@
 from dataclasses import dataclass
-
-from flask import Flask, jsonify, request
+import openpyxl
+from datetime import datetime
+from flask import Flask, jsonify, request, send_from_directory
 from internal.categories import category
 from internal.channels import channel
 from internal.postgres.channel import default_limit, default_offset
@@ -18,7 +19,7 @@ class Handler:
 
     def create_routes(self):
         """Метод инициализации рутов"""
-        self.app.add_url_rule("/api/v1/channel/<id>",
+        self.app.add_url_rule("/api/v1/channel/<int:id>",
                               "get_channel",
                               self.get_channel)
 
@@ -42,6 +43,46 @@ class Handler:
         self.app.add_url_rule("/api/v1/user/<id>",
                               "get_user_by_id",
                               self.get_user_by_id)
+
+        self.app.add_url_rule("/api/v1/doc",
+                              "send_channels_data",
+                              self.send_channels_data)
+
+    def send_channels_data(self):
+        a = self.channel_storage.get_all()
+
+        workbook = openpyxl.Workbook()
+
+        temp_name = datetime.now()
+
+        sheet = workbook.active
+
+        sheet['A1'] = "ID"
+        sheet['B1'] = "Name"
+        sheet['C1'] = "Tg_link"
+        sheet['D1'] = "Category"
+        sheet['E1'] = "Sub_count"
+        sheet['F1'] = "Avg_coverage"
+        sheet['G1'] = "ER"
+        sheet['H1'] = "CPM"
+        sheet['I1'] = "Post_price"
+
+        for i in a:
+            sheet.append((i.id,
+                          i.name,
+                          i.tg_link,
+                          i.category,
+                          i.sub_count,
+                          i.avg_coverage,
+                          i.er,
+                          i.cpm,
+                          i.post_price))
+
+        workbook.save(f"{temp_name}.xlsx")
+        workbook.close()
+        return send_from_directory(".",
+                                   f"{temp_name}.xlsx",
+                                   as_attachment=True), 200
 
     def get_all_channels(self):
         """Метод GET для списка каналов
@@ -71,7 +112,7 @@ class Handler:
         res = {"count": len(channels), "items": channel_res}
         return res, 200
 
-    def get_channel(self, id):
+    def get_channel(self, id: int):
         """Метод GET для информации о канале
 
         :param id: ID канала в базе
