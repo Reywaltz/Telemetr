@@ -164,6 +164,7 @@ class Fetcher:
 
     def fetch(self):
         """Точка инициализации фетчера"""
+        self.logger.info("Началась работа фетчера")
         self.client.run(self.update_db_data())
 
 

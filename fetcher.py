@@ -1,4 +1,5 @@
 import toml
+import time
 from pyrogram import Client
 from apps.Fetcher import fetcher
 from internal.postgres import channel, postgres
@@ -33,4 +34,6 @@ channel_storage = channel.new_storage(db)
 fetcher = fetcher.Fetcher(logger, client, channel_storage)
 
 if __name__ == "__main__":
-    fetcher.fetch()
+    while True:
+        fetcher.fetch()
+        time.sleep(60 * 30)

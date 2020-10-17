@@ -1,7 +1,8 @@
 from dataclasses import dataclass
 import openpyxl
-from datetime import datetime
-from flask import Flask, jsonify, request, send_from_directory
+from flask import Flask, jsonify, request, send_file
+from io import BytesIO
+from tempfile import NamedTemporaryFile
 from internal.categories import category
 from internal.channels import channel
 from internal.postgres.channel import default_limit, default_offset
@@ -49,40 +50,40 @@ class Handler:
                               self.send_channels_data)
 
     def send_channels_data(self):
-        a = self.channel_storage.get_all()
+        channels = self.channel_storage.get_all()
 
         workbook = openpyxl.Workbook()
 
-        temp_name = datetime.now()
+        with NamedTemporaryFile() as tmp:
 
-        sheet = workbook.active
+            sheet = workbook.active
 
-        sheet['A1'] = "ID"
-        sheet['B1'] = "Name"
-        sheet['C1'] = "Tg_link"
-        sheet['D1'] = "Category"
-        sheet['E1'] = "Sub_count"
-        sheet['F1'] = "Avg_coverage"
-        sheet['G1'] = "ER"
-        sheet['H1'] = "CPM"
-        sheet['I1'] = "Post_price"
+            sheet['A1'] = "ID"
+            sheet['B1'] = "Name"
+            sheet['C1'] = "Tg_link"
+            sheet['D1'] = "Category"
+            sheet['E1'] = "Sub_count"
+            sheet['F1'] = "Avg_coverage"
+            sheet['G1'] = "ER"
+            sheet['H1'] = "CPM"
+            sheet['I1'] = "Post_price"
 
-        for i in a:
-            sheet.append((i.id,
-                          i.name,
-                          i.tg_link,
-                          i.category,
-                          i.sub_count,
-                          i.avg_coverage,
-                          i.er,
-                          i.cpm,
-                          i.post_price))
+            for item in channels:
+                sheet.append((item.id,
+                             item.name,
+                             item.tg_link,
+                             item.category,
+                             item.sub_count,
+                             item.avg_coverage,
+                             item.er,
+                             item.cpm,
+                             item.post_price))
+            workbook.save(tmp.name)
+            output = BytesIO(tmp.read())
 
-        workbook.save(f"{temp_name}.xlsx")
-        workbook.close()
-        return send_from_directory(".",
-                                   f"{temp_name}.xlsx",
-                                   as_attachment=True), 200
+        return send_file(output,
+                         attachment_filename='data.xlsx',
+                         as_attachment=True), 200
 
     def get_all_channels(self):
         """Метод GET для списка каналов
