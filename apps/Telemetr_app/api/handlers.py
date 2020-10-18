@@ -27,6 +27,11 @@ class Handler:
                               self.get_channel,
                               )
 
+        self.app.add_url_rule("/api/v1/channel/<int:id>",
+                              "update_channel",
+                              self.update_channel,
+                              methods=["PUT"])
+
         self.app.add_url_rule("/api/v1/channel",
                               "get_all_channels",
                               self.get_all_channels)
@@ -50,12 +55,8 @@ class Handler:
 
         self.app.add_url_rule("/api/v1/doc",
                               "send_channels_data",
-                              self.send_channels_data)
-
-        self.app.add_url_rule("/api/v1/channel/<int:id>",
-                              "update_channel",
-                              self.update_channel,
-                              methods=["PUT"])
+                              self.send_channels_data,
+                              methods=["POST"])
 
     def update_channel(self, id):
         data = request.get_json()
@@ -82,7 +83,24 @@ class Handler:
                 return {"error": "wrong json format"}, 404
 
     def send_channels_data(self):
-        channels = self.channel_storage.get_all()
+        data = request.get_json()
+        if data is None or data == []:
+            return {"error": "wrong json format"}, 404
+
+        id_data = []
+
+        try:
+            for i in data:
+                id_data.append(i["id"])
+            id_data = tuple(id_data)
+
+        except KeyError:
+            return {"error": "wrong json format"}, 404
+
+        channels = self.channel_storage.get_channels_to_doc(id_data)
+
+        if channels is None:
+            return {"error": "channels not selected"}, 400
 
         workbook = openpyxl.Workbook()
 
@@ -142,7 +160,9 @@ class Handler:
         channel_res = []
         for item in channels:
             channel_res.append(item.to_json())
-        res = {"count": len(channels), "items": channel_res}
+        res = {"count": len(channels),
+               "limit": default_limit,
+               "items": channel_res}
         return res, 200
 
     def get_channel(self, id: int):

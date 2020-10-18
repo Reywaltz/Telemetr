@@ -83,3 +83,16 @@ class Storage(ABC):
             :type channel: Channel
         """
         pass
+
+    @abstractmethod
+    def get_channels_to_doc(self, id_data: tuple):
+        """Метод получения каналов, необходимых для добавления в EXEL файл
+
+        :param
+            id_data: ID каналов, которые нужно выгрузить
+            :type id_data: tuple
+        :return:
+            Каналы из БД
+            :rtype: List[channel.Channel]
+        """
+    pass

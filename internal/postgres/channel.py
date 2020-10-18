@@ -49,6 +49,9 @@ class ChannelStorage(channel.Storage):
     get_channel_by_id_query = f"SELECT {select_all_channel_fields} \
                                FROM channels WHERE id = %s"
 
+    get_channels_in_range_query = f"SELECT {select_all_channel_fields} \
+                                    FROM channels WHERE id IN %s"
+
     update_channel_fields_query = "UPDATE channels SET sub_count=%s, \
                                    avg_coverage=%s, er=%s \
                                    WHERE tg_link=%s RETURNING id"
@@ -185,6 +188,28 @@ class ChannelStorage(channel.Storage):
         except Exception:
             self.db.session.rollback()
             return False
+
+    def get_channels_to_doc(self, id_data: tuple) -> List[channel.Channel]:
+        """Метод получения каналов, необходимых для добавления в EXEL файл
+
+        :param
+            id_data: ID каналов, которые нужно выгрузить
+            :type id_data: tuple
+        :return:
+            Каналы из БД
+            :rtype: List[channel.Channel]
+        """
+        cursor = self.db.session.cursor()
+        try:
+            cursor.execute(self.get_channels_in_range_query, (id_data, ))
+        except Exception:
+            self.db.session.rollback()
+            return None
+        row = cursor.fetchall()
+        if row is not None:
+            return scan_channels(row)
+        else:
+            return None
 
 
 def scan_channel(data: tuple) -> channel.Channel:
