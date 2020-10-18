@@ -32,6 +32,7 @@ class Fetcher:
                 if dialog.chat.type == "channel" and dialog.chat.username is not None: # noqa
                     try:
                         dialog.chat.username
+                        self.logger.info(f"Канал {dialog.chat.username}")
                         messages = await self.get_channel_messages(dialog.chat.id, DAYS) # noqa
 
                         views = self.count_channel_views(messages)
@@ -55,6 +56,8 @@ class Fetcher:
         channel_list = await self.get_stats()
         for _channel in channel_list:
             self.channel_storage.update_data_from_fetcher(_channel)
+        self.logger.info("Работа фетчера окончена. \
+                         Инициализация через 30 минут")
 
     async def get_channel_messages(self,
                                    channel_id: int,

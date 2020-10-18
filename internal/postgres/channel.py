@@ -53,6 +53,9 @@ class ChannelStorage(channel.Storage):
                                    avg_coverage=%s, er=%s \
                                    WHERE tg_link=%s RETURNING id"
 
+    update_post_price_query = "UPDATE channels SET post_price=%s \
+                              WHERE id = %s RETURNING ID"
+
     def get_all(self,
                 min_subcribers=0,
                 max_subscribers=9999999999,
@@ -161,6 +164,27 @@ class ChannelStorage(channel.Storage):
             self.db.session.commit()
         except Exception:
             self.db.session.rollback()
+
+    def update_post_price(self, channel: channel.Channel):
+        """Метод обновления цены данных за пост
+
+        :param channel:
+            Объект канала
+            :type channel: Channel
+        """
+        try:
+            cursor = self.db.session.cursor()
+            cursor.execute(self.update_post_price_query, (channel.post_price,
+                                                          channel.id,))
+            data = cursor.fetchone()
+            if data is None:
+                return False
+            else:
+                self.db.session.commit()
+                return True
+        except Exception:
+            self.db.session.rollback()
+            return False
 
 
 def scan_channel(data: tuple) -> channel.Channel:

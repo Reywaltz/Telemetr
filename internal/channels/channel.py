@@ -47,9 +47,10 @@ class Storage(ABC):
     def get_channel_by_id(self, id: int) -> Channel:
         """Метод поиска канала по его ID в базе данных
 
-        :param id: ID канала
-        :type id: int
-        :return: канал
+        :param id:
+            ID канала
+            :type id: int
+        :return: Канал
         :rtype: Channel
         """
         pass
@@ -67,7 +68,18 @@ class Storage(ABC):
     def update_data_from_fetcher(self, channel: Channel):
         """Метод обновления данных каналов из Телеграм клиента
 
-        :param channel: Объект канала
-        :type channel: Channel
+        :param channel:
+            Объект канала
+            :type channel: Channel
+        """
+        pass
+
+    @abstractmethod
+    def update_post_price(self, channel: Channel):
+        """Метод обновления цены данных за пост
+
+        :param channel:
+            Объект канала
+            :type channel: Channel
         """
         pass

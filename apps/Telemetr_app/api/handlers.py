@@ -1,8 +1,10 @@
 from dataclasses import dataclass
-import openpyxl
-from flask import Flask, jsonify, request, send_file
 from io import BytesIO
 from tempfile import NamedTemporaryFile
+import openpyxl
+
+from flask import Flask, jsonify, request, send_file
+
 from internal.categories import category
 from internal.channels import channel
 from internal.postgres.channel import default_limit, default_offset
@@ -22,7 +24,8 @@ class Handler:
         """Метод инициализации рутов"""
         self.app.add_url_rule("/api/v1/channel/<int:id>",
                               "get_channel",
-                              self.get_channel)
+                              self.get_channel,
+                              )
 
         self.app.add_url_rule("/api/v1/channel",
                               "get_all_channels",
@@ -48,6 +51,35 @@ class Handler:
         self.app.add_url_rule("/api/v1/doc",
                               "send_channels_data",
                               self.send_channels_data)
+
+        self.app.add_url_rule("/api/v1/channel/<int:id>",
+                              "update_channel",
+                              self.update_channel,
+                              methods=["PUT"])
+
+    def update_channel(self, id):
+        data = request.get_json()
+        if data is None:
+            return {"error": "empty data"}, 404
+        else:
+            try:
+                _channel = channel.Channel(id=id,
+                                           username="",
+                                           name="",
+                                           tg_link="",
+                                           category="",
+                                           sub_count="",
+                                           avg_coverage=0,
+                                           er=0,
+                                           cpm=0,
+                                           post_price=data["post_price"])
+                if self.channel_storage.update_post_price(_channel):
+                    self.logger.info(f"Обновлен канал ID: {_channel.id}")
+                    return {"success": "post_price updated"}, 201
+                else:
+                    return {"error": "channel doesn't exist"}, 404
+            except KeyError:
+                return {"error": "wrong json format"}, 404
 
     def send_channels_data(self):
         channels = self.channel_storage.get_all()
@@ -180,7 +212,7 @@ class Handler:
             _category = category.Category(data['category'])
             if self.category_storage.insert(_category):
                 self.logger.info(f"Добавлена категория {_category.name}")
-                return {"success": "new category added"}, 200
+                return {"success": "new category added"}, 201
             else:
                 return {"error": "category already exists"}, 404
         except KeyError:
