@@ -62,6 +62,8 @@ class ChannelStorage(channel.Storage):
     insert_channel_query = "INSERT INTO channels (" + insert_channel_fields + " ) \
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
+    delete_channel_query = "DELETE FROM channels WHERE id=%s RETURNING ID"
+
     def get_all(self,
                 min_subcribers=0,
                 max_subscribers=9999999999,
@@ -230,6 +232,29 @@ class ChannelStorage(channel.Storage):
             return scan_channels(row)
         else:
             return None
+
+    def delete(self, id: int) -> bool:
+        """Метод удаления канала
+
+        :param
+            id: ID канала
+            :type id: int
+        :return:
+            Результат операции
+            :rtype: bool
+        """
+        cursor = self.db.session.cursor()
+        try:
+            cursor.execute(self.delete_channel_query, (id, ))
+            data = cursor.fetchone()
+            if data == []:
+                return False
+            else:
+                self.db.session.commit()
+                return True
+        except Exception:
+            self.db.session.rollback()
+            return False
 
 
 def scan_channel(data: tuple) -> channel.Channel:

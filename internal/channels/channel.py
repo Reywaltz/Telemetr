@@ -103,8 +103,14 @@ class Storage(ABC):
         :param
             id_data: ID каналов, которые нужно выгрузить
             :type id_data: tuple
-        :return:
-            Каналы из БД
-            :rtype: List[channel.Channel]
         """
-    pass
+        pass
+
+    @abstractmethod
+    def delete(self, id: int):
+        """Метод удаления канала
+
+        :param id: ID канала
+        :type id: int
+        """
+        pass

@@ -43,6 +43,11 @@ class Handler:
                               self.add_channel,
                               methods=["POST"])
 
+        self.app.add_url_rule("/api/v1/channel/<id>",
+                              "delete_channel",
+                              self.delete_channel,
+                              methods=["DELETE"])
+
         self.app.add_url_rule("/api/v1/category",
                               "get_categories",
                               self.get_categories)
@@ -65,6 +70,19 @@ class Handler:
                               self.send_channels_data,
                               methods=["POST"])
 
+    def delete_channel(self, id: int):
+        _channel = self.channel_storage.get_channel_by_id(id)
+
+        if _channel is None:
+            return {"error": "not found"}, 400
+
+        if self.channel_storage.delete(id):
+            self.logger.info(f"Удалён канал под ID {id}")
+            additions.leave_channel(self.client, _channel.tg_link)
+            return {"success": "channel deleted"}, 200
+        else:
+            return {"error": "channel was not deleted"}, 500
+
     def add_channel(self):
         """Метод добавления канала в БД
 
@@ -83,11 +101,14 @@ class Handler:
                 post_price = int(data["post_price"])
                 user_id = int(data["user_id"])
                 res = additions.join_to_channel(self.client, channel_login)
+
                 if res is None:
                     return {"error": "No channel"}
                 db_res = self.channel_storage.get_all(tg_link=res["username"])
+
                 if db_res != []:
                     return {"error": "channel already exists in db"}
+
                 if res is not None:
                     _channel = channel.Channel(id=0,
                                                username=user_id,
@@ -100,7 +121,7 @@ class Handler:
                                                cpm=0,
                                                post_price=post_price
                                                )
-                    if self.channel_storage.create(_channel):
+                    if self.channel_storage.insert(_channel):
                         self.logger.info(f"Добавлен канал. ID: {res['id']}, логин {res['username']}") # noqa
                         return {"success": "channel added"}
                     else:
