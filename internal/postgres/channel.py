@@ -1,6 +1,6 @@
 from dataclasses import dataclass
 from typing import List
-
+from psycopg2 import IntegrityError
 from internal.channels import channel
 from internal.postgres import postgres
 
@@ -58,6 +58,9 @@ class ChannelStorage(channel.Storage):
 
     update_post_price_query = "UPDATE channels SET post_price=%s \
                               WHERE id = %s RETURNING ID"
+
+    insert_channel_query = "INSERT INTO channels (" + insert_channel_fields + " ) \
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
     def get_all(self,
                 min_subcribers=0,
@@ -126,13 +129,30 @@ class ChannelStorage(channel.Storage):
 
         return ch_list
 
-    def create(self, channel: channel.Channel):
+    def insert(self, channel: channel.Channel) -> bool:
         """Метод добавления канала в БД
 
         :param channel: Объект канала
         :type channel: Channel
+        :return: Результат вставки в БД
+        :rtype: bool
         """
-        pass
+        try:
+            cursor = self.db.session.cursor()
+            cursor.execute(self.insert_channel_query, (channel.username,
+                                                       channel.name,
+                                                       channel.tg_link,
+                                                       channel.category,
+                                                       channel.sub_count,
+                                                       channel.avg_coverage,
+                                                       channel.er,
+                                                       channel.cpm,
+                                                       channel.post_price))
+            self.db.session.commit()
+            return True
+        except IntegrityError:
+            self.db.session.rollback()
+            return False
 
     def get_channel_by_id(self, id: int) -> channel.Channel:
         """Метод получения пользователя в базе данных

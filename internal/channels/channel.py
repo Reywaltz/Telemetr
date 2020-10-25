@@ -35,7 +35,7 @@ class Channel:
 class Storage(ABC):
     """Абстрактный класс пользователя"""
     @abstractmethod
-    def create(self, channel: Channel):
+    def insert(self, channel: Channel):
         """Метод вставки нового канала
 
         :param channel: объект канала
@@ -56,7 +56,19 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def get_all(self) -> List[Channel]:
+    def get_all(self,
+                min_subcribers=0,
+                max_subscribers=9999999999,
+                min_views=0,
+                max_views=9999999999,
+                min_er=0,
+                max_er=9999999999,
+                min_cost=0,
+                max_cost=9999999999,
+                tg_link="%%",
+                name="%%",
+                limit=15,
+                offset=0) -> List[Channel]:
         """Метод получения всех каналов из бд
 
         :return: Список каналов

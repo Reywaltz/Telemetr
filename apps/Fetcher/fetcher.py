@@ -56,8 +56,7 @@ class Fetcher:
         channel_list = await self.get_stats()
         for _channel in channel_list:
             self.channel_storage.update_data_from_fetcher(_channel)
-        self.logger.info("Работа фетчера окончена. \
-                         Инициализация через 30 минут")
+        self.logger.info("Работа фетчера окончена. Инициализация через 30 минут") # noqa
 
     async def get_channel_messages(self,
                                    channel_id: int,

@@ -1,6 +1,8 @@
 from datetime import datetime, timedelta
 from functools import wraps
 from flask import request
+from pyrogram import Client
+from pyrogram.errors import BadRequest
 import pytz
 
 timezone = pytz.timezone('Europe/Moscow')
@@ -28,3 +30,26 @@ def auth_required(fn):
             return {"error": "no auth"}, 401
 
     return wrapper
+
+
+def join_to_channel(teleg_client: Client, channel_login: str):
+    """Метод подписки телеграм клиента на канал.
+    При первом запуске необходимо войти в учётную запись Telegram
+
+    :param channel_login: Юзернейм канала
+    :type channel_login: str
+    """
+    try:
+        with teleg_client:
+            result = teleg_client.join_chat(channel_login)
+        if result is not None and result.type == "channel":
+            return result
+        else:
+            return None
+    except BadRequest:
+        return None
+
+
+def leave_channel(teleg_client: Client, channel_login: str):
+    with teleg_client:
+        teleg_client.leave_chat(channel_login, delete=True)

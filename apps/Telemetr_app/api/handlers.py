@@ -1,21 +1,23 @@
 from dataclasses import dataclass
 from io import BytesIO
 from tempfile import NamedTemporaryFile
+
 import openpyxl
-
+from apps.Telemetr_app.api import additions
 from flask import Flask, jsonify, request, send_file
-
 from internal.categories import category
 from internal.channels import channel
 from internal.postgres.channel import default_limit, default_offset
 from internal.users import user
 from pkg.log import logger
+from pyrogram import Client
 
 
 @dataclass
 class Handler:
     logger: logger.Logger
     app: Flask
+    client: Client
     user_storage: user.Storage
     channel_storage: channel.Storage
     category_storage: category.Storage
@@ -35,6 +37,11 @@ class Handler:
         self.app.add_url_rule("/api/v1/channel",
                               "get_all_channels",
                               self.get_all_channels)
+
+        self.app.add_url_rule("/api/v1/channel",
+                              "add_new_channel",
+                              self.add_channel,
+                              methods=["POST"])
 
         self.app.add_url_rule("/api/v1/category",
                               "get_categories",
@@ -58,10 +65,62 @@ class Handler:
                               self.send_channels_data,
                               methods=["POST"])
 
-    def update_channel(self, id):
+    def add_channel(self):
+        """Метод добавления канала в БД
+
+        :return: Статус операции
+        :rtype: JSON ответ
+        """
+
+        data = request.get_json(force=True)
+        if data is None:
+            return {"error": "empty data"}, 400
+        else:
+            try:
+                channel_login = str(data["channel_login"])
+                channel_name = str(data["channel_name"])
+                category = str(data["category"])
+                post_price = int(data["post_price"])
+                user_id = int(data["user_id"])
+                res = additions.join_to_channel(self.client, channel_login)
+                if res is None:
+                    return {"error": "No channel"}
+                db_res = self.channel_storage.get_all(tg_link=res["username"])
+                if db_res != []:
+                    return {"error": "channel already exists in db"}
+                if res is not None:
+                    _channel = channel.Channel(id=0,
+                                               username=user_id,
+                                               name=channel_name,
+                                               tg_link=channel_login,
+                                               category=category,
+                                               sub_count=0,
+                                               avg_coverage=0,
+                                               er=0,
+                                               cpm=0,
+                                               post_price=post_price
+                                               )
+                    if self.channel_storage.create(_channel):
+                        self.logger.info(f"Добавлен канал. ID: {res['id']}, логин {res['username']}") # noqa
+                        return {"success": "channel added"}
+                    else:
+                        additions.leave_channel(self.client, channel_login)
+                        return {"error": "inserttion error"}, 400
+
+            except KeyError:
+                return {"error": "wrong json format"}, 404
+
+    def update_channel(self, id: int):
+        """Метод обновления данных о канале
+
+        :param id: ID канала
+        :type id: int
+        :return: Статус операции
+        :rtype: JSON
+        """
         data = request.get_json()
         if data is None:
-            return {"error": "empty data"}, 404
+            return {"error": "empty data"}, 400
         else:
             try:
                 _channel = channel.Channel(id=id,
@@ -83,8 +142,13 @@ class Handler:
                 return {"error": "wrong json format"}, 404
 
     def send_channels_data(self):
+        """Метод отправки EXEL файла пользователю
+
+        :return: Ответ с готовым файлом
+        :rtype: Response
+        """
         data = request.get_json()
-        if data is None or data == []:
+        if data is None or data == [] or type(data) is dict:
             return {"error": "wrong json format"}, 404
 
         id_data = []
@@ -239,7 +303,7 @@ class Handler:
             return {"error": "wrong json format"}, 404
 
 
-def new_handler(logger: logger.Logger, app: Flask,
+def new_handler(logger: logger.Logger, app: Flask, client: Client,
                 user_storage: user.Storage,
                 channel_storage: channel.Storage,
                 category_storage: category.Storage) -> Handler:
@@ -249,6 +313,8 @@ def new_handler(logger: logger.Logger, app: Flask,
     :type logger: logger.Logger
     :param app: Приложение Flask
     :type app: Flask
+    :param Client: Телеграм клиент
+    :type app: Client
     :param user_storage: Хранилище пользователей
     :type user_storage: user.Storage
     :param channel_storage: Хранилище каналов
@@ -260,6 +326,7 @@ def new_handler(logger: logger.Logger, app: Flask,
     return Handler(
         logger=logger,
         app=app,
+        client=client,
         user_storage=user_storage,
         channel_storage=channel_storage,
         category_storage=category_storage

@@ -2,6 +2,7 @@ import toml
 from flask import Flask
 from flask_cors import CORS
 from pyrogram import Client
+
 from apps.Telemetr_app.api import handlers
 from internal.postgres import category, channel, postgres, user
 from pkg.log import filelogger
@@ -40,6 +41,7 @@ channel_storage = channel.new_storage(db)
 category_storage = category.new_storage(db)
 
 handlers = handlers.new_handler(logger, app,
+                                client,
                                 user_storage,
                                 channel_storage,
                                 category_storage)
