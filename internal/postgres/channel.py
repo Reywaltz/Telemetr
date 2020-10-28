@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 from psycopg2 import IntegrityError
 from internal.channels import channel
 from internal.postgres import postgres
@@ -76,7 +75,7 @@ class ChannelStorage(channel.Storage):
                 tg_link="%%",
                 name="%%",
                 limit=default_limit,
-                offset=default_offset) -> List[channel.Channel]:
+                offset=default_offset) -> list[channel.Channel]:
         """Метод получения списка каналов из БД с параметрами фильтрации
 
         :param min_subcribers:
@@ -111,7 +110,7 @@ class ChannelStorage(channel.Storage):
             Имя канала, defaults to "%%"
             :type name: str, optional
         :return: Список каналов
-        :rtype: List[Channel]
+        :rtype: list[Channel]
         """
         cursor = self.db.session.cursor()
         cursor.execute(self.get_channels_query, (min_subcribers,
@@ -211,7 +210,7 @@ class ChannelStorage(channel.Storage):
             self.db.session.rollback()
             return False
 
-    def get_channels_to_doc(self, id_data: tuple) -> List[channel.Channel]:
+    def get_channels_to_doc(self, id_data: tuple) -> list[channel.Channel]:
         """Метод получения каналов, необходимых для добавления в EXEL файл
 
         :param
@@ -219,7 +218,7 @@ class ChannelStorage(channel.Storage):
             :type id_data: tuple
         :return:
             Каналы из БД
-            :rtype: List[channel.Channel]
+            :rtype: list[channel.Channel]
         """
         cursor = self.db.session.cursor()
         try:
@@ -279,13 +278,13 @@ def scan_channel(data: tuple) -> channel.Channel:
     )
 
 
-def scan_channels(data: List[tuple]) -> List[channel.Channel]:
+def scan_channels(data: list[tuple]) -> list[channel.Channel]:
     """Функция преобразовния SQL ответа в список объектов Channel
 
     :param data: SQL ответ из базы
-    :type data: List[tuple]
+    :type data: list[tuple]
     :return: Список каналов
-    :rtype: List[Channel]
+    :rtype: list[Channel]
     """
     channels = []
     for row in data:

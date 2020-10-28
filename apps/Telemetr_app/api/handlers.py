@@ -3,21 +3,20 @@ from io import BytesIO
 from tempfile import NamedTemporaryFile
 
 import openpyxl
-from apps.Telemetr_app.api import additions
 from flask import Flask, jsonify, request, send_file
 from internal.categories import category
 from internal.channels import channel
 from internal.postgres.channel import default_limit, default_offset
+from internal.telegram.client import TelegramClient
 from internal.users import user
 from pkg.log import logger
-from pyrogram import Client
 
 
 @dataclass
 class Handler:
     logger: logger.Logger
     app: Flask
-    client: Client
+    client: TelegramClient
     user_storage: user.Storage
     channel_storage: channel.Storage
     category_storage: category.Storage
@@ -78,7 +77,7 @@ class Handler:
 
         if self.channel_storage.delete(id):
             self.logger.info(f"Удалён канал под ID {id}")
-            additions.leave_channel(self.client, _channel.tg_link)
+            self.client.leave_channel(_channel.tg_link)
             return {"success": "channel deleted"}, 200
         else:
             return {"error": "channel was not deleted"}, 500
@@ -100,7 +99,8 @@ class Handler:
                 category = str(data["category"])
                 post_price = int(data["post_price"])
                 user_id = int(data["user_id"])
-                res = additions.join_to_channel(self.client, channel_login)
+
+                res = self.client.join_to_channel(channel_login)
 
                 if res is None:
                     return {"error": "No channel"}
@@ -125,7 +125,7 @@ class Handler:
                         self.logger.info(f"Добавлен канал. ID: {res['id']}, логин {res['username']}") # noqa
                         return {"success": "channel added"}
                     else:
-                        additions.leave_channel(self.client, channel_login)
+                        self.client.leave_channel(channel_login)
                         return {"error": "inserttion error"}, 400
 
             except KeyError:
@@ -324,7 +324,7 @@ class Handler:
             return {"error": "wrong json format"}, 404
 
 
-def new_handler(logger: logger.Logger, app: Flask, client: Client,
+def new_handler(logger: logger.Logger, app: Flask, client: TelegramClient,
                 user_storage: user.Storage,
                 channel_storage: channel.Storage,
                 category_storage: category.Storage) -> Handler:
@@ -335,7 +335,7 @@ def new_handler(logger: logger.Logger, app: Flask, client: Client,
     :param app: Приложение Flask
     :type app: Flask
     :param Client: Телеграм клиент
-    :type app: Client
+    :type app: TelegramClient
     :param user_storage: Хранилище пользователей
     :type user_storage: user.Storage
     :param channel_storage: Хранилище каналов

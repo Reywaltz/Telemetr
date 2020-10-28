@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -68,11 +67,11 @@ class Storage(ABC):
                 tg_link="%%",
                 name="%%",
                 limit=15,
-                offset=0) -> List[Channel]:
+                offset=0) -> list[Channel]:
         """Метод получения всех каналов из бд
 
         :return: Список каналов
-        :rtype: List[Channel]
+        :rtype: list[Channel]
         """
         pass
 

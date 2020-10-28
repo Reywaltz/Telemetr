@@ -1,14 +1,13 @@
-import pytz
+from zoneinfo import ZoneInfo
 import datetime
 from dataclasses import dataclass
-from typing import List, Union
 
 from internal.channels import channel
 from pkg.log import logger
 from pyrogram import Client
 from pyrogram.types import Message, Dialog
 
-timezone = pytz.timezone("Europe/Moscow")
+timezone = ZoneInfo("Europe/Moscow")
 
 DAYS = 7
 
@@ -20,11 +19,11 @@ class Fetcher:
     client: Client
     channel_storage: channel.Storage
 
-    async def get_stats(self) -> List[channel.Channel]:
+    async def get_stats(self) -> list[channel.Channel]:
         """Метод получения списка каналов с данными
 
         :return: Список объектов каналов
-        :rtype: List[Channel]
+        :rtype: list[Channel]
         """
         channel_list = []
         async with self.client:
@@ -60,7 +59,7 @@ class Fetcher:
 
     async def get_channel_messages(self,
                                    channel_id: int,
-                                   days: int) -> List[Message]:
+                                   days: int) -> list[Message]:
         """Метод получения сообщений из канала
 
         :param channel_id: ID чата
@@ -68,7 +67,7 @@ class Fetcher:
         :param days: Период в днях с которого нужно получить сообщения
         :type days: int
         :return: Список сообщений из канала
-        :rtype: List[Message]
+        :rtype: list[Message]
         """
         messages_list = []
         offset = 0
@@ -86,13 +85,13 @@ class Fetcher:
 
         return messages_list
 
-    def count_channel_views(self, messages: List[Message]) -> List[Union[int, int]]: # noqa
+    def count_channel_views(self, messages: list[Message]) -> list[int, int]: # noqa
         """Метод подсчёта общего числа просмотров канала
 
         :param messages: Список полученных сообщений за период
-        :type messages: List[Message]
+        :type messages: list[Message]
         :return: Список просмотров и кол-во сообщений за период
-        :rtype: List[int, int]
+        :rtype: list[int, int]
         """
         views_list = []
         message_count = 0
@@ -103,11 +102,11 @@ class Fetcher:
         views = [sum(views_list), message_count]
         return views
 
-    def count_avg_views(self, views: List[Union[int, int]]) -> int:
+    def count_avg_views(self, views: list[int, int]) -> int:
         """Метод подсчёта среднего охвата
 
         :param views: Список просмотров и кол-ва сообщений за период
-        :type views: List[int, int]
+        :type views: list[int, int]
         :return: Значение среднего охвата
         :rtype: int
         """
@@ -139,7 +138,7 @@ class Fetcher:
 
     def stats_to_channel(self, dialog: Dialog,
                          avg_views: int,
-                         views_list: List[Union[int, int]],
+                         views_list: list[int, int],
                          er: int) -> dict:
         """Метод конвертации данных в объект
 
@@ -148,7 +147,7 @@ class Fetcher:
         :param avg_views: Средний охват
         :type avg_views: int
         :param views_list: Список просмотров и число сообщений
-        :type views_list: List[Union[int, int]]
+        :type views_list: list[int, int]
         :param er: Показатель вовлечённости
         :type er: int
         :return: Словарь с данными о канале

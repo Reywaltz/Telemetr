@@ -1,6 +1,5 @@
 from abc import ABC, abstractmethod
 from dataclasses import dataclass
-from typing import List
 
 
 @dataclass
@@ -25,6 +24,6 @@ class Storage(ABC):
         pass
 
     @abstractmethod
-    def get_all(self) -> List[Category]:
+    def get_all(self) -> list[Category]:
         """Метод получения всех категорий"""
         pass

@@ -1,16 +1,12 @@
 import toml
 import time
-from pyrogram import Client
+# from pyrogram import Client
 from apps.Fetcher import fetcher
 from internal.postgres import channel, postgres
 from pkg.log import filelogger
+from app import client
 
 cfg = toml.load("cfg.toml")
-api_id = cfg.get("client").get("api_id")
-api_hash = cfg.get("client").get("api_hash")
-
-
-client = Client('Telemetr', api_id, api_hash)
 
 
 def configDB(cfg):
@@ -31,7 +27,7 @@ cfgDB = configDB(cfg)
 db = postgres.new(cfg=cfgDB, logger=logger)
 channel_storage = channel.new_storage(db)
 
-fetcher = fetcher.Fetcher(logger, client, channel_storage)
+fetcher = fetcher.Fetcher(logger, client.client, channel_storage)
 
 if __name__ == "__main__":
     while True:

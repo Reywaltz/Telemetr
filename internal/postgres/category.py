@@ -1,7 +1,6 @@
 from psycopg2 import IntegrityError
 
 from dataclasses import dataclass
-from typing import List
 
 from internal.categories import category
 from internal.postgres import postgres
@@ -24,11 +23,11 @@ class CategoryStorage(category.Storage):
     insert_category_query = "INSERT INTO categories (" + category_fields + \
                             " ) VALUES (%s)"
 
-    def get_all(self) -> List[category.Category]:
+    def get_all(self) -> list[category.Category]:
         """Метод получения всех категорий из БД
 
         :return: Категории из БД
-        :rtype: List[Category]
+        :rtype: list[Category]
         """
         cursor = self.db.session.cursor()
         cursor.execute(self.get_categories_query)
@@ -68,13 +67,13 @@ def scan_category(data: tuple) -> category.Category:
     )
 
 
-def scan_categories(data: List[tuple]) -> List[category.Category]:
+def scan_categories(data: list[tuple]) -> list[category.Category]:
     """Функция преобразовния SQL ответа в список объектов Categories
 
     :param data: SQL ответ из базы
-    :type data: List[tupple]
+    :type data: list[tupple]
     :return: Список категорий
-    :rtype: List[Category]
+    :rtype: list[Category]
     """
     categories = []
     for row in data:

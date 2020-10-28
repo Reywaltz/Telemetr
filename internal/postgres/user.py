@@ -1,5 +1,4 @@
 from dataclasses import dataclass
-from typing import List
 
 from internal.postgres import postgres
 from internal.users import user
@@ -21,12 +20,12 @@ class UserStorage(user.Storage):
     def create(self, user: user.User):
         """Метод добавления нового пользователя
 
-        :param user: [description]
+        :param user: Объект пользователя
         :type user: User
         """
         pass
 
-    def get_all(self) -> List[user.User]:
+    def get_all(self) -> list[user.User]:
         """Метод получения всех пользователей в базе данных
 
         :return: Список пользователей
@@ -70,13 +69,13 @@ def scan_user(data: tuple) -> user.User:
     )
 
 
-def scan_users(data: List[tuple]) -> List[user.User]:
+def scan_users(data: list[tuple]) -> list[user.User]:
     """Функция преобразования SQL ответа в список объектов Users
 
     :param data: SQL ответ
-    :type data: List[tupple],
+    :type data: list[tupple],
     :return: Список объектов пользователей
-    :rtype: List[User]
+    :rtype: list[User]
     """
     users = []
     for row in data:

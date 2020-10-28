@@ -2,17 +2,21 @@ import toml
 from flask import Flask
 from flask_cors import CORS
 from pyrogram import Client
+from internal.telegram.client import TelegramClient
 
 from apps.Telemetr_app.api import handlers
 from internal.postgres import category, channel, postgres, user
 from pkg.log import filelogger
 
 cfg = toml.load("cfg.toml")
+app_name = cfg.get("client").get("app_name")
 api_id = cfg.get("client").get("api_id")
 api_hash = cfg.get("client").get("api_hash")
 
 
-client = Client('Telemetr', api_id, api_hash)
+_client = Client(app_name, api_id, api_hash)
+
+client = TelegramClient(_client)
 
 
 def configDB(cfg):
