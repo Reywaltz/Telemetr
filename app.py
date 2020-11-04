@@ -4,7 +4,7 @@ from flask_cors import CORS
 from pyrogram import Client
 from internal.telegram.client import TelegramClient
 
-from apps.Telemetr_app.api import handlers
+from apps.telemetr.api import handlers
 from internal.postgres import category, channel, postgres, user
 from pkg.log import filelogger
 

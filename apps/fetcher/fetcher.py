@@ -1,11 +1,11 @@
-from zoneinfo import ZoneInfo
 import datetime
 from dataclasses import dataclass
 
 from internal.channels import channel
+from internal.telegram.client import TelegramClient
 from pkg.log import logger
-from pyrogram import Client
-from pyrogram.types import Message, Dialog
+from pyrogram.types import Dialog, Message
+from zoneinfo import ZoneInfo
 
 timezone = ZoneInfo("Europe/Moscow")
 
@@ -16,7 +16,7 @@ DAYS = 7
 class Fetcher:
     """Класс парсер данных из каналов"""
     logger: logger.Logger
-    client: Client
+    tg_client: TelegramClient
     channel_storage: channel.Storage
 
     async def get_stats(self) -> list[channel.Channel]:
@@ -26,14 +26,17 @@ class Fetcher:
         :rtype: list[Channel]
         """
         channel_list = []
-        async with self.client:
-            for dialog in await self.client.get_dialogs():
+        async with self.tg_client.client:
+            for dialog in await self.tg_client.client.get_dialogs():
                 if dialog.chat.type == "channel" and dialog.chat.username is not None: # noqa
                     try:
+                        # TODO Сохранение фотографии из каналов
+                        # print(dialog.chat.photo)
+                        # await self.tg_client.client.download_media(message="AQADAgAT7qKaDgAEAwADvben5xb___9oPnY-ingfJEGxAwABFgQ", file_name=f"{dialog.chat.title}.jpeg")
+                        # break
                         dialog.chat.username
                         self.logger.info(f"Канал {dialog.chat.username}")
                         messages = await self.get_channel_messages(dialog.chat.id, DAYS) # noqa
-
                         views = self.count_channel_views(messages)
 
                         avg_views = self.count_avg_views(views)
@@ -72,14 +75,15 @@ class Fetcher:
         messages_list = []
         offset = 0
 
-        messages = await self.client.get_history(channel_id)
+        messages = await self.tg_client.client.get_history(channel_id)
 
         self.logger.info("Получены 100 сообщений")
         messages_list = messages
 
         while datetime.datetime.fromtimestamp(messages[-1].date, timezone) >= datetime.datetime.now(timezone) - datetime.timedelta(days=days): # noqa
             offset += 100
-            messages = await self.client.get_history(channel_id, offset=offset)
+            messages = await self.tg_client.client.get_history(channel_id,
+                                                               offset=offset)
             self.logger.info("Получены дополнительные 100 сообщений")
             messages_list.extend(messages)
 
@@ -166,7 +170,7 @@ class Fetcher:
     def fetch(self):
         """Точка инициализации фетчера"""
         self.logger.info("Началась работа фетчера")
-        self.client.run(self.update_db_data())
+        self.tg_client.client.run(self.update_db_data())
 
 
 def transponse_channel(data: dict):
