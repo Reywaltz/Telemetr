@@ -3,6 +3,8 @@ from io import BytesIO
 from tempfile import NamedTemporaryFile
 
 import openpyxl
+from telegram import Update
+from apps.auth_bot.bot import Auth_bot
 from flask import Flask, jsonify, request, send_file
 from internal.categories import category
 from internal.channels import channel
@@ -20,6 +22,7 @@ class Handler:
     user_storage: user.Storage
     channel_storage: channel.Storage
     category_storage: category.Storage
+    auth_bot: Auth_bot
 
     def create_routes(self):
         """Метод инициализации рутов"""
@@ -68,6 +71,18 @@ class Handler:
                               "send_channels_data",
                               self.send_channels_data,
                               methods=["POST"])
+
+        self.app.add_url_rule("/api/v1/1448955216:AAE1crAzVA6vVLeL0CmD1VNPwiGzDomL5xk",
+                              "webhook",
+                              self.webhook,
+                              methods=["GET", "POST"])
+
+    def webhook(self):
+        data = Update.de_json(request.get_json(force=True),
+                              bot=self.auth_bot.bot)
+        print(data)
+        self.auth_bot.dispatcher.process_update(data)
+        return ''
 
     def delete_channel(self, id: int):
         _channel = self.channel_storage.get_channel_by_id(id)
@@ -327,7 +342,8 @@ class Handler:
 def new_handler(logger: logger.Logger, app: Flask, client: TelegramClient,
                 user_storage: user.Storage,
                 channel_storage: channel.Storage,
-                category_storage: category.Storage) -> Handler:
+                category_storage: category.Storage,
+                auth_bot: Auth_bot) -> Handler:
     """Метод создания хэндлера
 
     :param logger: Логгер проекта
@@ -350,5 +366,6 @@ def new_handler(logger: logger.Logger, app: Flask, client: TelegramClient,
         client=client,
         user_storage=user_storage,
         channel_storage=channel_storage,
-        category_storage=category_storage
+        category_storage=category_storage,
+        auth_bot=auth_bot
     )
