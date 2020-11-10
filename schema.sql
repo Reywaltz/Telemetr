@@ -1,3 +1,4 @@
+-- TODO Переделать структуру таблицы пользователей
 CREATE TABLE users( 
     id SERIAL PRIMARY KEY, 
     username TEXT NOT NULL

@@ -2,6 +2,8 @@ from dataclasses import dataclass
 
 from internal.postgres import postgres
 from internal.users import user
+# from psycopg2.errors import Error
+from psycopg2 import IntegrityError
 
 
 @dataclass
@@ -17,13 +19,23 @@ class UserStorage(user.Storage):
 
     get_user_query = "SELECT * FROM users WHERE id = %s ORDER BY id"
 
+    insert_user_query = "INSERT INTO users (id, username) VALUES (%s, %s)"
+
     def create(self, user: user.User):
         """Метод добавления нового пользователя
 
         :param user: Объект пользователя
         :type user: User
         """
-        pass
+        try:
+            cursor = self.db.session.cursor()
+            cursor.execute(self.insert_user_query, (user.id,
+                                                    user.username))
+            self.db.session.commit()
+            return True
+        except IntegrityError:
+            self.db.session.rollback()
+            return False
 
     def get_all(self) -> list[user.User]:
         """Метод получения всех пользователей в базе данных
