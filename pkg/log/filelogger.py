@@ -6,8 +6,9 @@ from pkg.log.logger import Logger
 class STDLogger(Logger):
     """Класс файлового логгера
 
-    :param Logger: Абстрактный класс
-    :type Logger: ABC
+    :param Logger:
+        Абстрактный класс
+        :type Logger: ABC
     """
     def __init__(self, logger: logging.Logger):
         self.logger = logger
@@ -28,8 +29,9 @@ class STDLogger(Logger):
 def new_logger(logger_name: str) -> STDLogger:
     """Создание нового логгера
 
-    :param logger_name: название логгера
-    :type logger_name: str
+    :param logger_name:
+        Название логгера
+        :type logger_name: str
     :return: новый логгер
     :rtype: logging.Logger
     """

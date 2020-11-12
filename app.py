@@ -15,7 +15,6 @@ api_id = cfg.get("client").get("api_id")
 api_hash = cfg.get("client").get("api_hash")
 bot_token = cfg.get("auth_bot").get("token")
 
-
 _client = Client(app_name, api_id, api_hash)
 
 client = TelegramClient(_client)

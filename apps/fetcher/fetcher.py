@@ -10,6 +10,7 @@ from zoneinfo import ZoneInfo
 timezone = ZoneInfo("Europe/Moscow")
 
 DAYS = 7
+channel_img_folder = "channel_img/"
 
 
 @dataclass
@@ -27,16 +28,20 @@ class Fetcher:
         """
         channel_list = []
         async with self.tg_client.client:
-            for dialog in await self.tg_client.client.get_dialogs():
+            dialogs = await self.tg_client.client.get_dialogs()
+            for dialog in dialogs:
                 if dialog.chat.type == "channel" and dialog.chat.username is not None: # noqa
                     try:
-                        # TODO Сохранение фотографии из каналов
-                        # print(dialog.chat.photo)
-                        # await self.tg_client.client.download_media(message="AQADAgAT7qKaDgAEAwADvben5xb___9oPnY-ingfJEGxAwABFgQ", file_name=f"{dialog.chat.title}.jpeg")
-                        # break
-                        dialog.chat.username
+                        photo_id = dialog.chat.photo.small_file_id
+                        file_name = f"{channel_img_folder + photo_id}.png"
+
                         self.logger.info(f"Канал {dialog.chat.username}")
+
                         messages = await self.get_channel_messages(dialog.chat.id, DAYS) # noqa
+                        await self.tg_client.client.download_media(message=photo_id, file_name=file_name) # noqa
+
+                        self.logger.info(f"Аватар канала {dialog.chat.title} загружен. Файл: {file_name}") # noqa
+
                         views = self.count_channel_views(messages)
 
                         avg_views = self.count_avg_views(views)
@@ -47,7 +52,8 @@ class Fetcher:
                         res_dict = self.stats_to_channel(dialog,
                                                          avg_views,
                                                          views,
-                                                         er)
+                                                         er,
+                                                         file_name)
                         channel_list.append(transponse_channel(res_dict))
                     except AttributeError:
                         self.logger.info(f"Канал {dialog.chat.title} не публичный") # noqa
@@ -143,17 +149,22 @@ class Fetcher:
     def stats_to_channel(self, dialog: Dialog,
                          avg_views: int,
                          views_list: list[int, int],
-                         er: int) -> dict:
+                         er: int,
+                         photo_path: str) -> dict:
         """Метод конвертации данных в объект
 
-        :param dialog: Объект диалога
-        :type dialog: Dialog
-        :param avg_views: Средний охват
-        :type avg_views: int
-        :param views_list: Список просмотров и число сообщений
-        :type views_list: list[int, int]
-        :param er: Показатель вовлечённости
-        :type er: int
+        :param dialog:
+            Объект диалога
+            :type dialog: Dialog
+        :param avg_views:
+            Средний охват
+            :type avg_views: int
+        :param views_list:
+            Список просмотров и число сообщений
+            :type views_list: list[int, int]
+        :param er:
+            Показатель вовлечённости
+            :type er: int
         :return: Словарь с данными о канале
         :rtype: dict
         """
@@ -163,7 +174,8 @@ class Fetcher:
                 "avg_views": round(avg_views),
                 "er": round(er, 1),
                 "channel_id": dialog.chat.id,
-                "tg_link": dialog.chat.username
+                "tg_link": dialog.chat.username,
+                "photo_path": photo_path
                 }
         return data
 
@@ -176,8 +188,9 @@ class Fetcher:
 def transponse_channel(data: dict):
     """Функция преобразовния словаря в объект
 
-    :param data: Словарь с данными
-    :type data: dict
+    :param data:
+        Словарь с данными
+        :type data: dict
     :return: Объект канала
     :rtype: Channel
     """
@@ -191,5 +204,6 @@ def transponse_channel(data: dict):
         avg_coverage=data["avg_views"],
         er=data["er"],
         cpm=0,
-        post_price=0
+        post_price=0,
+        photo_path=data['photo_path']
     )

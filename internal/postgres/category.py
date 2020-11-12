@@ -11,11 +11,8 @@ category_fields = "name"
 
 @dataclass
 class CategoryStorage(category.Storage):
-    """Реализация абстрактного класса Storage категорий
+    """Реализация абстрактного класса Storage категорий"""
 
-    :param user: абстрактный класс категорий
-    :type user: category.Storage
-    """
     db: postgres.DB
 
     get_categories_query = "SELECT name FROM categories ORDER BY name"
@@ -39,8 +36,9 @@ class CategoryStorage(category.Storage):
     def insert(self, category: category.Category) -> bool:
         """Метод добавления новой категории в БД
 
-        :param category: Объект категории
-        :type category: category.Category
+        :param category:
+            Объект категории
+            :type category: category.Category
         :return: Результат вставки
         :rtype: bool
         """
@@ -57,8 +55,9 @@ class CategoryStorage(category.Storage):
 def scan_category(data: tuple) -> category.Category:
     """Преобразование SQL ответа в объект
 
-    :param data: SQL ответ
-    :type data: tuple
+    :param data:
+        SQL ответ
+        :type data: tuple
     :return: Объект категории
     :rtype: Category
     """
@@ -70,8 +69,9 @@ def scan_category(data: tuple) -> category.Category:
 def scan_categories(data: list[tuple]) -> list[category.Category]:
     """Функция преобразовния SQL ответа в список объектов Categories
 
-    :param data: SQL ответ из базы
-    :type data: list[tupple]
+    :param data:
+        SQL ответ из базы
+        :type data: list[tupple]
     :return: Список категорий
     :rtype: list[Category]
     """
@@ -86,8 +86,9 @@ def scan_categories(data: list[tuple]) -> list[category.Category]:
 def new_storage(db: postgres.DB) -> CategoryStorage:
     """Функция инициализации хранилища категорий
 
-    :param db: объект базы данных
-    :type db: postgres.DB
+    :param db:
+        объект базы данных
+        :type db: postgres.DB
     :return: объект хранилища категорий
     :rtype: Category
     """

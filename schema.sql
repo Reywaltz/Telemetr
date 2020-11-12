@@ -1,20 +1,17 @@
 -- TODO Переделать структуру таблицы пользователей
 CREATE TABLE users( 
     id SERIAL PRIMARY KEY, 
-    username TEXT NOT NULL
+    username TEXT,
+    telegram_id TEXT UNIQUE NOT NULL,
+    telegram_photo TEXT NOT NULL,
+    auth_code TEXT,
+    created_at TIMESTAMP WITH ZONE DEFAULT NOW(),
+    valid_to TIMESTAMP WITH ZONE
     );
 
 CREATE TABLE categories(
     name TEXT PRIMARY KEY
 );
-
-CREATE TABLE auth_key(
-    user_id SERIAL PRIMARY KEY,
-    auth_code TEXT DEFAULT 'code',
-    created_at DATE DEFAULT NOW(),
-    valid_to DATE DEFAULT NOW(),
-    CONSTRAINT fk_user_id FOREIGN KEY (user_id) REFERENCES users(id)
-    );
 
 CREATE TABLE channels(
     id SERIAL PRIMARY KEY,
@@ -27,6 +24,7 @@ CREATE TABLE channels(
     er INTEGER NOT NULL DEFAULT 0,
     cpm INTEGER NOT NULL DEFAULT 0,
     post_price INTEGER DEFAULT 0,
+    photo_path TEXT DEFAULT '',
     CONSTRAINT fk_owner FOREIGN KEY (owner) REFERENCES users(id),
     CONSTRAINT fk_category FOREIGN KEY (category) REFERENCES categories(name)
 );

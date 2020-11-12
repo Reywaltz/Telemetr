@@ -11,8 +11,9 @@ class TelegramClient:
         """Метод подписки телеграм клиента на канал.
         При первом запуске необходимо войти в учётную запись Telegram
 
-        :param channel_login: Юзернейм канала
-        :type channel_login: str
+        :param channel_login:
+            Юзернейм канала
+            :type channel_login: str
         """
         try:
             with self.client:
@@ -25,5 +26,11 @@ class TelegramClient:
             return None
 
     def leave_channel(self, channel_login: str):
+        """Метод отписки от канала
+
+        :param channel_login:
+            Логин канала
+            :type channel_login: str
+        """
         with self.client:
             self.client.leave_chat(channel_login, delete=True)

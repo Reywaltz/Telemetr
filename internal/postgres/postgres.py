@@ -28,10 +28,12 @@ class DB:
 def new(cfg: Config, logger: logger.Logger) -> DB:
     """Создание нового подключения к базе данных
 
-    :param cfg: параметры подключения к базе данных
-    :type cfg: Config
-    :param logger: логгер проекта
-    :type logger: logger.Logger
+    :param cfg:
+        Параметры подключения к базе данных
+        :type cfg: Config
+    :param logger:
+        Логгер проекта
+        :type logger: logger.Logger
     :return: объект подключения к базе данных
     :rtype: DB
     """

@@ -15,8 +15,9 @@ class Channel:
     er: int
     cpm: int
     post_price: int
+    photo_path: str
 
-    def to_json(self):
+    def to_json(self) -> dict:
         """Метод представления объекта в JSON"""
         return {"id": self.id,
                 "username": self.username,
@@ -27,7 +28,8 @@ class Channel:
                 "avg_coverage": self.avg_coverage,
                 "er": self.er,
                 "cpm": self.cpm,
-                "post_price": self.post_price
+                "post_price": self.post_price,
+                "photo_path": self.photo_path
                 }
 
 
@@ -56,20 +58,51 @@ class Storage(ABC):
 
     @abstractmethod
     def get_all(self,
-                min_subcribers=0,
-                max_subscribers=9999999999,
-                min_views=0,
-                max_views=9999999999,
-                min_er=0,
-                max_er=9999999999,
-                min_cost=0,
-                max_cost=9999999999,
-                tg_link="%%",
-                name="%%",
-                limit=15,
-                offset=0) -> list[Channel]:
-        """Метод получения всех каналов из бд
+                min_subcribers: int = 0,
+                max_subscribers: int = 9999999999,
+                min_views: int = 0,
+                max_views: int = 9999999999,
+                min_er: int = 0,
+                max_er: int = 9999999999,
+                min_cost: int = 0,
+                max_cost: int = 9999999999,
+                tg_link: str = "%%",
+                name: str = "%%",
+                limit: int = 15,
+                offset: int = 0) -> list[Channel]:
+        """Метод получения списка каналов из БД с параметрами фильтрации
 
+        :param min_subcribers:
+            Минимальное число подписчиков на канале, defaults: 0
+            :type min_subcribers: int, optional
+        :param max_subscribers:
+            Максимальное число подписчиков на канале, default: 9999999999
+            :type max_subscribers: int, optional
+        :param min_views:
+            Минимальное число просмотров на канале, default: 0
+            :type min_views: int, optional
+        :param max_views:
+            Максимальное число просмотров на канале, default: 9999999999
+            :type max_views: int, optional
+        :param min_er:
+            Минимальное параметр ER на канале, default: 0
+            :type min_er: int, optional
+        :param max_er:
+            Максимальный параметр ER на канале, default: 9999999999
+            :type max_er: int, optional
+        :param min_cost:
+            Минимальное значение стоймости просмотора на канале, default: 0
+            :type min_cost: int, optional
+        :param max_cost:
+            Максимальное значение стоймости просмотора на канале,
+            default: 9999999999
+            :type max_cost: int, optional
+        :param tg_link:
+            Ссылка на телеграмм канал без @, defaults to "%%"
+            :type tg_link: str, optional
+        :param name:
+            Имя канала, defaults to "%%"
+            :type name: str, optional
         :return: Список каналов
         :rtype: list[Channel]
         """
@@ -109,7 +142,8 @@ class Storage(ABC):
     def delete(self, id: int):
         """Метод удаления канала
 
-        :param id: ID канала
-        :type id: int
+        :param id:
+            ID канала
+            :type id: int
         """
         pass

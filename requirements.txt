@@ -17,7 +17,6 @@ pycodestyle==2.6.0
 pyflakes==2.2.0
 Pyrogram==1.0.7
 PySocks==1.7.1
-pytz==2020.1
 six==1.15.0
 TgCrypto==1.2.2
 toml==0.10.1

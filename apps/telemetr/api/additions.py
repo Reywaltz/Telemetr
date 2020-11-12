@@ -1,14 +1,13 @@
-from datetime import datetime, timedelta
+from datetime import datetime
 from functools import wraps
 from flask import request
 from pyrogram import Client
 from pyrogram.errors import BadRequest
-import pytz
+from zoneinfo import ZoneInfo
 
-timezone = pytz.timezone('Europe/Moscow')
+timezone = ZoneInfo('Europe/Moscow')
 
 
-# TODO ПЕРЕПИСАТЬ ПОД АВТОРИЗАЦИЮ В ТЕЛЕГРАММЕ
 def auth_required(fn):
     """Метод декоратор для проверки авторизации пользователя
     :return: Продолжение / прерывание обращения к API
@@ -20,11 +19,11 @@ def auth_required(fn):
 
         request_token = request.headers.get('Authorization').split(' ')[-1]
 
-        db_token = self.user_storage.get_uuid(request_token)
-        if db_token is None:
+        auth_code = self.user_storage.get_user_by_authcode(request_token)
+        if auth_code is None:
             return {"error": "no auth"}, 401
 
-        if db_token.created_at + timedelta(hours=12) > datetime.now(timezone):
+        if auth_code.valid_to > datetime.now(timezone):
             return fn(self, **kwargs)
         else:
             return {"error": "no auth"}, 401
@@ -36,8 +35,9 @@ def join_to_channel(teleg_client: Client, channel_login: str):
     """Метод подписки телеграм клиента на канал.
     При первом запуске необходимо войти в учётную запись Telegram
 
-    :param channel_login: Юзернейм канала
-    :type channel_login: str
+    :param channel_login:
+        Юзернейм канала
+        :type channel_login: str
     """
     try:
         with teleg_client:
@@ -51,5 +51,14 @@ def join_to_channel(teleg_client: Client, channel_login: str):
 
 
 def leave_channel(teleg_client: Client, channel_login: str):
+    """Метод отписки от телеграм канала
+
+    :param teleg_client:
+        Телеграм клиент
+        :type teleg_client: Client
+    :param channel_login:
+        Логин канала
+        :type channel_login: str
+    """
     with teleg_client:
         teleg_client.leave_chat(channel_login, delete=True)

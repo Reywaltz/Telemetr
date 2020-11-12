@@ -1,11 +1,12 @@
 from dataclasses import dataclass
-from psycopg2 import IntegrityError
+
 from internal.channels import channel
 from internal.postgres import postgres
+from psycopg2 import IntegrityError
 
 insert_channel_fields = "owner, name, " + \
                         "tg_link, category, sub_count, " + \
-                        "avg_coverage, er, cpm, post_price"
+                        "avg_coverage, er, cpm, post_price, photo_path"
 
 select_all_channel_fields = "id, " + insert_channel_fields
 
@@ -26,12 +27,8 @@ offset_value = "%s"
 
 @dataclass
 class ChannelStorage(channel.Storage):
-    """Реализация абстрактного класса Storage канала
+    """Реализация абстрактного класса Storage канала"""
 
-    :param user:
-        Абстрактный класс канала
-        :type user: Storage
-    """
     db: postgres.DB
 
     get_channels_query = f"SELECT {select_all_channel_fields} FROM channels \
@@ -52,7 +49,7 @@ class ChannelStorage(channel.Storage):
                                     FROM channels WHERE id IN %s"
 
     update_channel_fields_query = "UPDATE channels SET sub_count=%s, \
-                                   avg_coverage=%s, er=%s \
+                                   avg_coverage=%s, er=%s, photo_path=%s \
                                    WHERE tg_link=%s RETURNING id"
 
     update_post_price_query = "UPDATE channels SET post_price=%s \
@@ -133,8 +130,9 @@ class ChannelStorage(channel.Storage):
     def insert(self, channel: channel.Channel) -> bool:
         """Метод добавления канала в БД
 
-        :param channel: Объект канала
-        :type channel: Channel
+        :param channel:
+            Объект канала
+            :type channel: Channel
         :return: Результат вставки в БД
         :rtype: bool
         """
@@ -158,8 +156,9 @@ class ChannelStorage(channel.Storage):
     def get_channel_by_id(self, id: int) -> channel.Channel:
         """Метод получения пользователя в базе данных
 
-        :param id: ID канала в БД
-        :type id: int
+        :param id:
+            ID канала в БД
+            :type id: int
         :return: Канал из БД
         :rtype: Channel
         """
@@ -174,8 +173,9 @@ class ChannelStorage(channel.Storage):
     def update_data_from_fetcher(self, channel: channel.Channel):
         """Метод обновления данных каналов из Телеграм клиента
 
-        :param channel: Объект канала
-        :type channel: Channel
+        :param channel:
+            Объект канала
+            :type channel: Channel
         """
         try:
             cursor = self.db.session.cursor()
@@ -183,7 +183,9 @@ class ChannelStorage(channel.Storage):
                 self.update_channel_fields_query, (channel.sub_count,
                                                    channel.avg_coverage,
                                                    channel.er,
-                                                   channel.tg_link))
+                                                   channel.photo_path,
+                                                   channel.tg_link
+                                                   ))
 
             self.db.session.commit()
         except Exception:
@@ -274,7 +276,8 @@ def scan_channel(data: tuple) -> channel.Channel:
         avg_coverage=data[6],
         er=data[7],
         cpm=data[8],
-        post_price=data[9]
+        post_price=data[9],
+        photo_path=data[10]
     )
 
 

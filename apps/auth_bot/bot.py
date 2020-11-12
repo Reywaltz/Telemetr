@@ -1,14 +1,20 @@
 import logging
 from dataclasses import dataclass
+from datetime import datetime, timedelta
 
 import toml
 from internal.users import user
 from telegram.bot import Bot
 from telegram.ext import CommandHandler
+from telegram.ext.callbackcontext import CallbackContext
 from telegram.ext.dispatcher import Dispatcher
+from telegram.update import Update
+from zoneinfo import ZoneInfo
 
 cfg = toml.load("cfg.toml")
-bot_token = cfg.get("auth_bot").get("token")
+tz_info = cfg.get("timezone").get("tz_info")
+
+tz = ZoneInfo(tz_info)
 
 
 @dataclass
@@ -18,29 +24,63 @@ class Auth_bot:
     dispatcher: Dispatcher
     user_storage: user.Storage
 
-    def start(self, update, context):
+    def start(self, update: Update, context: CallbackContext):
+        """Хэндлер для обработки сообщения при получения ботом команды /start
+
+        :param update:
+            Входящее обновления с серверов telegram
+            :type update: telegram.update.Update
+        :param context:
+            Контекст обновления бота
+            :type context: telegram.ext.callbackcontext.CallbackContext
+        """
         print(context.args)
         if context.args == []:
             context.bot.send_message(update.effective_chat.id, text="Hello")
         else:
-            tel_user = user.User(update.message.chat.id,
-                                 update.message.chat.username)
+            site_code = context.args[0]
+            try:
+                username = update.message.chat.username
+            except KeyError:
+                username = ''
 
-            self.user_storage.create(tel_user)
+            created_at = datetime.now(tz)
+            # print(created_at)
+            tel_user = user.User(id=0,
+                                 username=username,
+                                 telegram_id=update.message.chat.id,
+                                 auth_code=site_code,
+                                 created_at=created_at,
+                                 valid_to=created_at + timedelta(hours=1))
 
-            # photo = context.bot.get_user_profile_photos(update.message.chat.id)
-            # file = context.bot.get_file(photo['photos'][0][-1]['file_id'])
-            # file.download()
+            if not self.user_storage.create(tel_user):
+                self.user_storage.update_auth_key(tel_user)
             context.bot.send_message(update.effective_chat.id, text="Nice one")
 
     def create_hanlders(self):
-        start_handler = CommandHandler('start', self.start)
+        """Метод инициализации хэндлеров бота"""
+
+        start_handler = CommandHandler("start", self.start)
         self.dispatcher.add_handler(start_handler)
 
 
 def new(logger: logging.Logger,
         bot_token: str,
         user_storage: user.Storage) -> Auth_bot:
+    """Метод создания класса бота авторизации
+
+    :param logger:
+        Логгер проекта
+        :type logger: logging.Logger
+    :param bot_token:
+        Токен бота
+        :type bot_token: str
+    :param user_storage:
+        Хранилище БД пользователей
+        :type user_storage: user.Storage
+    :return: Объект класса
+    :rtype: Auth_bot
+    """
     bot = Bot(bot_token)
     return Auth_bot(logger=logging.Logger,
                     bot=bot,
