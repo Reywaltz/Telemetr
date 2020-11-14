@@ -3,10 +3,9 @@ CREATE TABLE users(
     id SERIAL PRIMARY KEY, 
     username TEXT,
     telegram_id TEXT UNIQUE NOT NULL,
-    telegram_photo TEXT NOT NULL,
     auth_code TEXT,
-    created_at TIMESTAMP WITH ZONE DEFAULT NOW(),
-    valid_to TIMESTAMP WITH ZONE
+    created_at TIMESTAMP WITH TIME ZONE DEFAULT NOW(),
+    valid_to TIMESTAMP WITH TIME ZONE
     );
 
 CREATE TABLE categories(

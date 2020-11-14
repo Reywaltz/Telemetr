@@ -56,7 +56,7 @@ class ChannelStorage(channel.Storage):
                               WHERE id = %s RETURNING ID"
 
     insert_channel_query = "INSERT INTO channels (" + insert_channel_fields + " ) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
     delete_channel_query = "DELETE FROM channels WHERE id=%s RETURNING ID"
 
@@ -146,7 +146,8 @@ class ChannelStorage(channel.Storage):
                                                        channel.avg_coverage,
                                                        channel.er,
                                                        channel.cpm,
-                                                       channel.post_price))
+                                                       channel.post_price,
+                                                       channel.photo_path))
             self.db.session.commit()
             return True
         except IntegrityError:

@@ -1,6 +1,5 @@
 from dataclasses import dataclass
 from pyrogram import Client
-from pyrogram.errors import BadRequest
 
 
 @dataclass
@@ -15,14 +14,11 @@ class TelegramClient:
             Юзернейм канала
             :type channel_login: str
         """
-        try:
-            with self.client:
-                result = self.client.join_chat(channel_login)
-            if result is not None and result.type == "channel":
-                return result
-            else:
-                return None
-        except BadRequest:
+        with self.client:
+            result = self.client.join_chat(channel_login)
+        if result is not None and result.type == "channel":
+            return result
+        else:
             return None
 
     def leave_channel(self, channel_login: str):
@@ -33,4 +29,4 @@ class TelegramClient:
             :type channel_login: str
         """
         with self.client:
-            self.client.leave_chat(channel_login, delete=True)
+            self.client.leave_chat(str(channel_login), delete=True)

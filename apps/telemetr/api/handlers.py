@@ -3,6 +3,7 @@ from io import BytesIO
 from tempfile import NamedTemporaryFile
 
 import openpyxl
+from pyrogram.errors import BadRequest
 import toml
 from apps.auth_bot.bot import Auth_bot
 from apps.telemetr.api.additions import auth_required
@@ -81,7 +82,7 @@ class Handler:
                               self.send_channels_data,
                               methods=["POST"])
 
-        self.app.add_url_rule("/api/v1/{bot_token}",
+        self.app.add_url_rule(f"/api/v1/{bot_token}",
                               "webhook",
                               self.webhook,
                               methods=["POST"])
@@ -144,7 +145,7 @@ class Handler:
         else:
             return {"error": "channel was not deleted"}, 500
 
-    @auth_required
+    # @auth_required
     def add_channel(self) -> Response:
         """Метод добавления канала в БД
 
@@ -181,7 +182,8 @@ class Handler:
                                                avg_coverage=0,
                                                er=0,
                                                cpm=0,
-                                               post_price=post_price
+                                               post_price=post_price,
+                                               photo_path=""
                                                )
                     if self.channel_storage.insert(_channel):
                         self.logger.info(f"Добавлен канал. ID: {res['id']}, логин {res['username']}") # noqa
@@ -189,6 +191,9 @@ class Handler:
                     else:
                         self.client.leave_channel(channel_login)
                         return {"error": "inserttion error"}, 400
+
+            except BadRequest:
+                return {"error": "wrong channel username"}, 400
 
             except KeyError:
                 return {"error": "wrong json format"}, 400
@@ -291,7 +296,6 @@ class Handler:
         :rtype: Response
         """
         url_params = request.args
-        print(url_params)
         channels = self.channel_storage.get_all(
             url_params.get("min_subcribers", 0, type=int),
             url_params.get("max_subcribers", 9999999999, type=int),
@@ -371,7 +375,7 @@ class Handler:
 
         return jsonify(user_res), 200
 
-    @auth_required
+    # @auth_required
     def add_category(self) -> Response:
         """POST запрос на вставку категории
 
