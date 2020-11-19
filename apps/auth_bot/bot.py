@@ -4,6 +4,7 @@ from datetime import datetime, timedelta
 
 import toml
 from internal.users import user
+from telegram import InlineKeyboardMarkup, InlineKeyboardButton
 from telegram.bot import Bot
 from telegram.ext import CommandHandler
 from telegram.ext.callbackcontext import CallbackContext
@@ -15,6 +16,7 @@ cfg = toml.load("cfg.toml")
 tz_info = cfg.get("timezone").get("tz_info")
 
 tz = ZoneInfo(tz_info)
+url = "https://gavnishe.tk/api/v1/channel"
 
 
 @dataclass
@@ -35,8 +37,18 @@ class Auth_bot:
             :type context: telegram.ext.callbackcontext.CallbackContext
         """
         print(context.args)
+        keyboard = [
+                [
+                    InlineKeyboardButton("На сайт",
+                                         url=url),
+                ]
+            ]
+        reply_markup = InlineKeyboardMarkup(keyboard, resize_keyboard=True)
         if context.args == []:
-            context.bot.send_message(update.effective_chat.id, text="Hello")
+            context.bot.send_message(update.effective_chat.id,
+                                     text="Здравствуйте. Для начала авторизации \
+                                          начните на кнопку входа на сайте",
+                                     reply_markup=reply_markup)
         else:
             site_code = context.args[0]
             try:
@@ -55,7 +67,13 @@ class Auth_bot:
 
             if not self.user_storage.create(tel_user):
                 self.user_storage.update_auth_key(tel_user)
-            context.bot.send_message(update.effective_chat.id, text="Nice one")
+
+            user_firstname = update.message.chat.first_name
+
+            context.bot.send_message(update.effective_chat.id,
+                                     text="Здравствуйте, " + user_firstname +
+                                          ". Возвращайтесь на сайт",
+                                     reply_markup=reply_markup)
 
     def create_hanlders(self):
         """Метод инициализации хэндлеров бота"""

@@ -6,3 +6,4 @@ Telemetr_app/Auth_bot/*.toml
 Telemetr.session
 Telemetr.session-journal
 channel_img/
+.vscode/
