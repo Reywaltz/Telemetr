@@ -46,7 +46,7 @@ class ChannelStorage(channel.Storage):
                                FROM channels WHERE id = %s"
 
     get_channels_in_range_query = f"SELECT {select_all_channel_fields} \
-                                    FROM channels WHERE id IN %s"
+                                    FROM channels WHERE id IN %s ORDER BY id"
 
     update_channel_fields_query = "UPDATE channels SET sub_count=%s, \
                                    avg_coverage=%s, er=%s, photo_path=%s \

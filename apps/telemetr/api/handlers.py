@@ -3,7 +3,6 @@ from io import BytesIO
 from tempfile import NamedTemporaryFile
 
 import openpyxl
-from pyrogram.errors import BadRequest
 import toml
 from apps.auth_bot.bot import Auth_bot
 from apps.telemetr.api.additions import auth_required
@@ -14,8 +13,8 @@ from internal.postgres.channel import default_limit, default_offset
 from internal.telegram.client import TelegramClient
 from internal.users import user
 from pkg.log import logger
+from pyrogram.errors import BadRequest
 from telegram import Update
-
 
 cfg = toml.load("cfg.toml")
 bot_token = cfg.get("auth_bot").get("token")
@@ -80,7 +79,7 @@ class Handler:
         self.app.add_url_rule("/api/v1/doc",
                               "send_channels_data",
                               self.send_channels_data,
-                              methods=["POST"])
+                              methods=["GET"])
 
         self.app.add_url_rule(f"/api/v1/{bot_token}",
                               "webhook",
@@ -145,7 +144,7 @@ class Handler:
         else:
             return {"error": "channel was not deleted"}, 500
 
-    # @auth_required
+    @auth_required
     def add_channel(self) -> Response:
         """Метод добавления канала в БД
 
@@ -237,24 +236,21 @@ class Handler:
         :return: Ответ с готовым файлом
         :rtype: Response
         """
-        data = request.get_json()
-        if data is None or data == [] or type(data) is dict:
-            return {"error": "wrong json format"}, 400
 
-        id_data = []
+        url_params = request.args
 
-        try:
-            for i in data:
-                id_data.append(i["id"])
-            id_data = tuple(id_data)
+        id_query = url_params.get("id", None)
+        if id_query is None:
+            return {"error": "empty data"}, 400
 
-        except KeyError:
-            return {"error": "wrong json format"}, 400
+        id_data_sorted_set = sorted(set(id_query.split(",")))
+
+        id_data = tuple(id_data_sorted_set)
 
         channels = self.channel_storage.get_channels_to_doc(id_data)
 
         if channels is None:
-            return {"error": "channels not selected"}, 400
+            return {"error": "channels not found"}, 400
 
         workbook = openpyxl.Workbook()
 
@@ -283,8 +279,9 @@ class Handler:
                              item.cpm,
                              item.post_price))
             workbook.save(tmp.name)
-            output = BytesIO(tmp.read())
 
+            output = BytesIO(tmp.read())
+        self.logger.info(f"Запрос на скачивание файла с id: {id_data_sorted_set}") # noqa
         return send_file(output,
                          attachment_filename='data.xlsx',
                          as_attachment=True), 200
