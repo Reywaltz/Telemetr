@@ -1,10 +1,12 @@
-import logging
+import re
+import toml
+
 from dataclasses import dataclass
 from datetime import datetime, timedelta
 
-import toml
 from internal.users import user
-from telegram import InlineKeyboardMarkup, InlineKeyboardButton
+from pkg.log import logger
+from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.bot import Bot
 from telegram.ext import CommandHandler
 from telegram.ext.callbackcontext import CallbackContext
@@ -21,7 +23,7 @@ url = "https://gavnishe.tk/api/v1/channel"
 
 @dataclass
 class Auth_bot:
-    logger: logging.Logger
+    logger: logger.Logger
     bot: Bot
     dispatcher: Dispatcher
     user_storage: user.Storage
@@ -37,6 +39,7 @@ class Auth_bot:
             :type context: telegram.ext.callbackcontext.CallbackContext
         """
         print(context.args)
+        user_firstname = update.message.chat.first_name
         keyboard = [
                 [
                     InlineKeyboardButton("На сайт",
@@ -56,24 +59,30 @@ class Auth_bot:
             except KeyError:
                 username = ''
 
-            created_at = datetime.now(tz)
-            # print(created_at)
-            tel_user = user.User(id=0,
-                                 username=username,
-                                 telegram_id=update.message.chat.id,
-                                 auth_code=site_code,
-                                 created_at=created_at,
-                                 valid_to=created_at + timedelta(hours=1))
+            """Проверка на валидность ключа по формату MD5"""
+            if re.findall(r"([a-fA-F\d]{32})", site_code) == []:
+                context.bot.send_message(update.effective_chat.id,
+                                         text=user_firstname + ", Повторите попытку входа через сайт.", # noqa
+                                         reply_markup=reply_markup)
+                self.logger.info(f"Код {context.args[0]} не прошёл валидацию по регулярному выражению") # noqa 
+            else:
+                created_at = datetime.now(tz)
+                # print(created_at)
+                tel_user = user.User(id=0,
+                                     username=username,
+                                     telegram_id=update.message.chat.id,
+                                     auth_code=site_code,
+                                     created_at=created_at,
+                                     valid_to=created_at + timedelta(hours=1))
 
-            if not self.user_storage.create(tel_user):
-                self.user_storage.update_auth_key(tel_user)
+                if not self.user_storage.create(tel_user):
+                    self.user_storage.update_auth_key(tel_user)
+                    self.logger.info(f"Обновлён ключ пользователя под id {tel_user.telegram_id}") # noqa
 
-            user_firstname = update.message.chat.first_name
-
-            context.bot.send_message(update.effective_chat.id,
-                                     text="Здравствуйте, " + user_firstname +
-                                          ". Возвращайтесь на сайт",
-                                     reply_markup=reply_markup)
+                context.bot.send_message(update.effective_chat.id,
+                                         text="Здравствуйте, " + user_firstname + # noqa
+                                              ". Возвращайтесь на сайт",
+                                         reply_markup=reply_markup)
 
     def create_hanlders(self):
         """Метод инициализации хэндлеров бота"""
@@ -82,7 +91,7 @@ class Auth_bot:
         self.dispatcher.add_handler(start_handler)
 
 
-def new(logger: logging.Logger,
+def new(logger: logger.Logger,
         bot_token: str,
         user_storage: user.Storage) -> Auth_bot:
     """Метод создания класса бота авторизации
@@ -100,7 +109,7 @@ def new(logger: logging.Logger,
     :rtype: Auth_bot
     """
     bot = Bot(bot_token)
-    return Auth_bot(logger=logging.Logger,
+    return Auth_bot(logger=logger,
                     bot=bot,
                     dispatcher=Dispatcher(bot, None, 1),
                     user_storage=user_storage)

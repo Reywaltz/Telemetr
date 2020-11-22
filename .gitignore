@@ -7,3 +7,4 @@ Telemetr.session
 Telemetr.session-journal
 channel_img/
 .vscode/
+*.log

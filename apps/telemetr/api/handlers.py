@@ -1,9 +1,11 @@
+
+import openpyxl
+import toml
+
 from dataclasses import dataclass
 from io import BytesIO
 from tempfile import NamedTemporaryFile
 
-import openpyxl
-import toml
 from apps.auth_bot.bot import Auth_bot
 from apps.telemetr.api.additions import auth_required
 from flask import Flask, Response, jsonify, request, send_file
@@ -89,7 +91,11 @@ class Handler:
         self.app.add_url_rule("/api/v1/auth",
                               "auth",
                               self.auth_check,
-                              methods=["POST"])
+                              methods=["POST"]),
+
+        self.app.add_url_rule("/api/v1/me",
+                              "user_channel",
+                              self.get_user_channels)
 
     def auth_check(self) -> Response:
         """Метод проверки пользователя на авторизацию с сайта
@@ -372,7 +378,7 @@ class Handler:
 
         return jsonify(user_res), 200
 
-    # @auth_required
+    @auth_required
     def add_category(self) -> Response:
         """POST запрос на вставку категории
 
@@ -391,6 +397,28 @@ class Handler:
                 return {"error": "category already exists"}, 400
         except KeyError:
             return {"error": "wrong json format"}, 400
+
+    def get_user_channels(self) -> Response:
+        args = request.args
+        auth_code = request.headers.get('Authorization', None)
+
+        user_id = args.get("id", None, int)
+        required_user = self.user_storage.get_user_by_id(user_id)
+
+        if user_id is None or (required_user is None):
+            return {"error": "no user info"}, 400
+        if (auth_code is None) or (auth_code != required_user.auth_code):
+            return {"error": "unauthorized access to other data"}, 401
+
+        channel_res = []
+        res = self.channel_storage.get_user_channels(user_id)
+
+        if (res is None) or (res is False):
+            return {"status": "No channels"}, 400
+
+        for item in res:
+            channel_res.append(item.to_json())
+        return jsonify(channel_res), 200
 
 
 def new_handler(logger: logger.Logger, app: Flask, client: TelegramClient,

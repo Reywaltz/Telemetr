@@ -31,7 +31,8 @@ def configDB(cfg):
     return cfgDB
 
 
-logger = filelogger.new_logger("file_log")
+logger = filelogger.new_logger("api")
+telegram_logger = filelogger.new_logger("telegram")
 
 app = Flask(__name__,
             instance_relative_config=cfg.get("secret_key").get("secret_key"))
@@ -46,7 +47,7 @@ user_storage = user.new_storage(db)
 channel_storage = channel.new_storage(db)
 category_storage = category.new_storage(db)
 
-auth_bot = bot.new(logger, bot_token, user_storage)
+auth_bot = bot.new(telegram_logger, bot_token, user_storage)
 auth_bot.create_hanlders()
 
 handlers = handlers.new_handler(logger, app,

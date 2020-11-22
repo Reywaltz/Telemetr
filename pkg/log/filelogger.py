@@ -37,7 +37,7 @@ def new_logger(logger_name: str) -> STDLogger:
     """
     file_logger = logging.getLogger(logger_name)
     file_logger.setLevel(logging.DEBUG)
-    fl = logging.FileHandler("info.log", encoding="UTF-8")
+    fl = logging.FileHandler(f"{logger_name}.log", encoding="UTF-8")
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     fl.setFormatter(formatter)
     file_logger.addHandler(fl)

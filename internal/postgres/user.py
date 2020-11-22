@@ -2,7 +2,6 @@ from dataclasses import dataclass
 
 from internal.postgres import postgres
 from internal.users import user
-# from psycopg2.errors import Error
 from psycopg2.errors import UniqueViolation
 
 insert_user_field = "username, telegram_id, auth_code, created_at, valid_to"

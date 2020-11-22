@@ -1,7 +1,6 @@
-import psycopg2
-
 from dataclasses import dataclass
 
+import psycopg2
 from pkg.log import logger
 
 

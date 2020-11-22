@@ -1,9 +1,11 @@
-import toml
 import time
+
+import toml
 from pyrogram import Client
-from internal.telegram.client import TelegramClient
+
 from apps.fetcher import fetcher
 from internal.postgres import channel, postgres
+from internal.telegram.client import TelegramClient
 from pkg.log import filelogger
 
 cfg = toml.load("cfg.toml")
@@ -23,7 +25,7 @@ def configDB(cfg):
     return cfgDB
 
 
-logger = filelogger.new_logger("file_log")
+logger = filelogger.new_logger("fetcher")
 
 cfgDB = configDB(cfg)
 

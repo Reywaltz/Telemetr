@@ -58,6 +58,9 @@ class ChannelStorage(channel.Storage):
     insert_channel_query = "INSERT INTO channels (" + insert_channel_fields + " ) \
                             VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
 
+    get_user_channels_query = f"SELECT {select_all_channel_fields} FROM channels \
+                              WHERE owner = %s"
+
     delete_channel_query = "DELETE FROM channels WHERE id=%s RETURNING ID"
 
     def get_all(self,
@@ -257,6 +260,26 @@ class ChannelStorage(channel.Storage):
         except Exception:
             self.db.session.rollback()
             return False
+
+    def get_user_channels(self, id: int):
+        """Получения списка каналов пользователя
+
+        :param id: ID пользователя
+        :type id: int
+        :return: Список каналов
+        :rtype: List[Channel]
+        """
+        cursor = self.db.session.cursor()
+        try:
+            cursor.execute(self.get_user_channels_query, (id, ))
+        except Exception:
+            self.db.session.rollback()
+            return False
+        data = cursor.fetchall()
+        if data == []:
+            return None
+        else:
+            return scan_channels(data)
 
 
 def scan_channel(data: tuple) -> channel.Channel:
