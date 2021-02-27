@@ -9,6 +9,7 @@ class Channel:
     username: str
     name: str
     tg_link: str
+    tg_id: str
     category: str
     sub_count: int
     avg_coverage: int
@@ -23,6 +24,7 @@ class Channel:
                 "username": self.username,
                 "name": self.name,
                 "tg_link": self.tg_link,
+                "tg_id": self.tg_id,
                 "category": self.category,
                 "sub_count": self.sub_count,
                 "avg_coverage": self.avg_coverage,
@@ -68,6 +70,7 @@ class Storage(ABC):
                 max_cost: int = 9999999999,
                 tg_link: str = "%%",
                 name: str = "%%",
+                category: str = "%%",
                 limit: int = 15,
                 offset: int = 0) -> list[Channel]:
         """Метод получения списка каналов из БД с параметрами фильтрации
@@ -146,4 +149,8 @@ class Storage(ABC):
             ID канала
             :type id: int
         """
+        pass
+
+    @abstractmethod
+    def get_channel_by_teleg_id(self, id: str):
         pass

@@ -5,11 +5,12 @@ from internal.channels import channel
 from internal.telegram.client import TelegramClient
 from pkg.log import logger
 from pyrogram.types import Dialog, Message
+from pyrogram.errors.exceptions import ChannelPrivate
 from zoneinfo import ZoneInfo
 
-timezone = ZoneInfo("Europe/Moscow")
+tz = ZoneInfo("Europe/Moscow")
 
-DAYS = 7
+DAYS = 14
 channel_img_folder = "channel_img/"
 
 
@@ -30,17 +31,27 @@ class Fetcher:
         async with self.tg_client.client:
             dialogs = await self.tg_client.client.get_dialogs()
             for dialog in dialogs:
-                if dialog.chat.type == "channel" and dialog.chat.username is not None: # noqa
+                if dialog.chat.type == "channel" and dialog.chat.title == "Gmusic": # noqa
+                    invite_link = await self.get_chat_info(dialog.chat.id)
                     try:
-                        photo_id = dialog.chat.photo.small_file_id
-                        file_name = f"{channel_img_folder + photo_id}.png"
+                        try:
+                            print(dialog.chat.title + f" {dialog.chat.id}")
+                            photo_id = dialog.chat.photo.small_file_id
+                            file_name = f"{channel_img_folder + photo_id}.png"
+                            await self.tg_client.client.download_media(message=photo_id, # noqa
+                                                                       file_name=file_name) # noqa
+                            self.logger.info(f"Аватар канала {dialog.chat.title} загружен. Файл: {file_name}") # noqa
 
-                        self.logger.info(f"Канал {dialog.chat.username}")
+                        except AttributeError:
+                            file_name = ""
+
+                        if dialog.chat.username is None:
+                            self.logger.info(f"Канал: {dialog.chat.title}")
+                        else:
+                            self.logger.info(f"Канал: {dialog.chat.username}")
+
 
                         messages = await self.get_channel_messages(dialog.chat.id, DAYS) # noqa
-                        await self.tg_client.client.download_media(message=photo_id, file_name=file_name) # noqa
-
-                        self.logger.info(f"Аватар канала {dialog.chat.title} загружен. Файл: {file_name}") # noqa
 
                         views = self.count_channel_views(messages)
 
@@ -50,14 +61,25 @@ class Fetcher:
                                            dialog.chat.members_count)
 
                         res_dict = self.stats_to_channel(dialog,
+                                                         invite_link,
                                                          avg_views,
                                                          views,
                                                          er,
                                                          file_name)
                         channel_list.append(transponse_channel(res_dict))
-                    except AttributeError:
+                    except ChannelPrivate:
                         self.logger.info(f"Канал {dialog.chat.title} не публичный") # noqa
+        channel_list = self.count_cpm(channel_list)
         return channel_list
+
+    async def get_chat_info(self, dialog_id: int):
+        _chat = await self.tg_client.client.get_chat(dialog_id)
+        try:
+            if _chat.invite_link is None:
+                return _chat.username
+            return _chat.invite_link
+        except Exception as e:
+            print(e)
 
     async def update_db_data(self):
         """Метод вставки данных по каналам в БД"""
@@ -86,7 +108,7 @@ class Fetcher:
         self.logger.info("Получены 100 сообщений")
         messages_list = messages
 
-        while datetime.datetime.fromtimestamp(messages[-1].date, timezone) >= datetime.datetime.now(timezone) - datetime.timedelta(days=days): # noqa
+        while (messages != []) and (datetime.datetime.fromtimestamp(messages[-1].date, tz) >= datetime.datetime.now(tz) - datetime.timedelta(days=days)): # noqa
             offset += 100
             messages = await self.tg_client.client.get_history(channel_id,
                                                                offset=offset)
@@ -105,8 +127,12 @@ class Fetcher:
         """
         views_list = []
         message_count = 0
+        cur_date = datetime.datetime.now(tz)
+        delta_date = cur_date - datetime.timedelta(days=DAYS)
         for message in messages:
-            if (message.views is not None) and (datetime.datetime.fromtimestamp(message.date) >= datetime.datetime.utcnow() - datetime.timedelta(days=DAYS)): # noqa
+            message_stamp = datetime.datetime.fromtimestamp(message.date, tz)
+            # if (message.views is not None) and (datetime.datetime.fromtimestamp(message.date, tz) >= datetime.datetime.now(tz) - datetime.timedelta(days=DAYS)): # noqa
+            if (message.views is not None) and (message_stamp >= delta_date):
                 views_list.append(message.views)
                 message_count += 1
         views = [sum(views_list), message_count]
@@ -146,7 +172,28 @@ class Fetcher:
             er = 0
             return er
 
+    def count_cpm(self, channel_list: list) -> list:
+        """Метод подсчёта cpm по каналу
+
+        :param channel_list: Список каналов по которым собрана статистика
+        :type channel_list: list
+        :return: Список с обновлёным полем cpm
+        :rtype: list
+        """
+        for current_channel in channel_list:
+            _channel = self.channel_storage.get_channel_by_teleg_id(current_channel.tg_id) # noqa
+            print(current_channel, _channel)
+            if _channel == []:
+                pass
+            else:
+                try:
+                    current_channel.cpm = (_channel.post_price / current_channel.avg_coverage) * 1000 # noqa
+                except ZeroDivisionError:
+                    current_channel.cpm = 0
+        return channel_list
+
     def stats_to_channel(self, dialog: Dialog,
+                         invite_link: str,
                          avg_views: int,
                          views_list: list[int, int],
                          er: int,
@@ -174,7 +221,8 @@ class Fetcher:
                 "avg_views": round(avg_views),
                 "er": round(er, 1),
                 "channel_id": dialog.chat.id,
-                "tg_link": dialog.chat.username,
+                "tg_link": invite_link,
+                "tg_id": str(dialog.chat.id),
                 "photo_path": photo_path
                 }
         return data
@@ -199,6 +247,7 @@ def transponse_channel(data: dict):
         username=0,
         name=data["channel_name"],
         tg_link=data["tg_link"],
+        tg_id=data["tg_id"],
         category="",
         sub_count=data["mem_count"],
         avg_coverage=data["avg_views"],

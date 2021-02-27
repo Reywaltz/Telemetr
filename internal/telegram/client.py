@@ -31,3 +31,16 @@ class TelegramClient:
         """
         with self.client:
             self.client.leave_chat(str(channel_login), delete=True)
+
+    def get_chat(self, channel_login: str):
+        """Метод проверки существования чата в Telegram по ссылке
+
+        :param channel_login:
+            Приглашение в телеграм канал
+            :type channel_login: str
+        :return: Информация о диалоге
+        :rtype: Chat | None
+        """
+        with self.client:
+            res = self.client.get_chat(channel_login)
+            return res

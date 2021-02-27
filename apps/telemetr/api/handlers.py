@@ -1,14 +1,16 @@
+import re
+from dataclasses import dataclass
+from datetime import datetime
+from io import BytesIO
+from tempfile import NamedTemporaryFile
+from zoneinfo import ZoneInfo
 
 import openpyxl
 import toml
-
-from dataclasses import dataclass
-from io import BytesIO
-from tempfile import NamedTemporaryFile
-
 from apps.auth_bot.bot import Auth_bot
-from apps.telemetr.api.additions import auth_required
+from apps.telemetr.api.additions import admin_auth_required, auth_required
 from flask import Flask, Response, jsonify, request, send_file
+from internal.admin import admin
 from internal.categories import category
 from internal.channels import channel
 from internal.postgres.channel import default_limit, default_offset
@@ -20,6 +22,11 @@ from telegram import Update
 
 cfg = toml.load("cfg.toml")
 bot_token = cfg.get("auth_bot").get("token")
+tz_info = cfg.get("timezone").get("tz_info")
+
+channel_invite_prefix = "https://t.me/"
+
+tz = ZoneInfo(tz_info)
 
 
 @dataclass
@@ -30,9 +37,11 @@ class Handler:
     user_storage: user.Storage
     channel_storage: channel.Storage
     category_storage: category.Storage
+    admin_storage: admin.Storage
     auth_bot: Auth_bot
 
     def create_routes(self):
+
         """Метод инициализации рутов"""
         self.app.add_url_rule("/api/v1/channel/<int:id>",
                               "get_channel",
@@ -96,6 +105,16 @@ class Handler:
         self.app.add_url_rule("/api/v1/me",
                               "user_channel",
                               self.get_user_channels)
+
+        self.app.add_url_rule("/api/v1/admin",
+                              "get_admin",
+                              self.get_admin,
+                              methods=["POST"])
+
+        self.app.add_url_rule("/api/v1/admin/<int:id>",
+                              "delete_channel_admin",
+                              self.admin_delete_channel,
+                              methods=["DELETE"])
 
     def auth_check(self) -> Response:
         """Метод проверки пользователя на авторизацию с сайта
@@ -161,46 +180,58 @@ class Handler:
         if data is None:
             return {"error": "empty data"}, 400
         else:
+
             try:
                 channel_login = str(data["channel_login"])
-                channel_name = str(data["channel_name"])
+                channel_name = data.get("channel_name", None)
                 category = str(data["category"])
                 post_price = int(data["post_price"])
                 user_id = int(data["user_id"])
 
-                res = self.client.join_to_channel(channel_login)
+                try:
+                    res = self.client.join_to_channel(channel_login)
 
-                if res is None:
-                    return {"error": "No channel"}, 400
-                db_res = self.channel_storage.get_all(tg_link=res["username"])
+                    if (res is None) or (res.type != "channel"):
+                        raise BadRequest
 
-                if db_res != []:
-                    return {"error": "channel already exists in db"}, 400
+                    if channel_name is None:
+                        channel_name = res.title
 
-                if res is not None:
-                    _channel = channel.Channel(id=0,
-                                               username=user_id,
-                                               name=channel_name,
-                                               tg_link=channel_login,
-                                               category=category,
-                                               sub_count=0,
-                                               avg_coverage=0,
-                                               er=0,
-                                               cpm=0,
-                                               post_price=post_price,
-                                               photo_path=""
-                                               )
-                    if self.channel_storage.insert(_channel):
-                        self.logger.info(f"Добавлен канал. ID: {res['id']}, логин {res['username']}") # noqa
-                        return {"success": "channel added"}, 200
-                    else:
-                        self.client.leave_channel(channel_login)
-                        return {"error": "inserttion error"}, 400
+                    tg_id = str(res.id)
+                    print(res)
+                    db_res = self.channel_storage.get_channel_by_teleg_id(tg_id) # noqa
 
-            except BadRequest:
-                return {"error": "wrong channel username"}, 400
+                    if db_res != []:
+                        return {"error": "channel already exists in db"}, 400
+
+                    if res is not None:
+                        _channel = channel.Channel(id=0,
+                                                   username=user_id,
+                                                   name=channel_name,
+                                                   tg_link=channel_login,
+                                                   tg_id=tg_id,
+                                                   category=category,
+                                                   sub_count=0,
+                                                   avg_coverage=0,
+                                                   er=0,
+                                                   cpm=0,
+                                                   post_price=post_price,
+                                                   photo_path=""
+                                                   )
+                        if self.channel_storage.insert(_channel):
+                            self.logger.info(f"Добавлен канал. ID: {res['id']}, логин {res['username']}") # noqa
+                            return {"success": "channel added"}, 200
+                        else:
+                            self.client.leave_channel(channel_login)
+                            return {"error": "inserttion error. \
+                                    Channel alreay exists"}, 400
+
+                except BadRequest:
+                    return {"error":
+                            "wrong channel username or dialog type"}, 400
 
             except KeyError:
+                print("format")
                 return {"error": "wrong json format"}, 400
 
     @auth_required
@@ -264,32 +295,39 @@ class Handler:
 
             sheet = workbook.active
 
-            sheet['A1'] = "ID"
-            sheet['B1'] = "Name"
-            sheet['C1'] = "Tg_link"
-            sheet['D1'] = "Category"
-            sheet['E1'] = "Sub_count"
-            sheet['F1'] = "Avg_coverage"
-            sheet['G1'] = "ER"
-            sheet['H1'] = "CPM"
-            sheet['I1'] = "Post_price"
+            sheet['A1'] = "Название"
+            sheet['B1'] = "Ссылка"
+            sheet['C1'] = "Подписчики"
+            sheet['D1'] = "Средний охват"
+            sheet['E1'] = "ER %"
+            sheet['F1'] = "Цена, руб."
+            sheet['G1'] = "CPM, руб."
 
-            for item in channels:
-                sheet.append((item.id,
-                             item.name,
+            for index, item in enumerate(channels):
+                sheet.append((item.name,
                              item.tg_link,
-                             item.category,
                              item.sub_count,
                              item.avg_coverage,
                              item.er,
                              item.cpm,
                              item.post_price))
+
+                link_check = re.findall("t.me/joinchat/", item.tg_link)
+
+                if link_check == []: # noqa
+                    new_hyperlink = channel_invite_prefix + item.tg_link
+                    sheet[f"B{index+2}"].hyperlink = new_hyperlink
+                else:
+                    sheet[f"B{index+2}"].hyperlink = item.tg_link
+                sheet[f"B{index+2}"].style = 'Hyperlink'
+
             workbook.save(tmp.name)
 
             output = BytesIO(tmp.read())
         self.logger.info(f"Запрос на скачивание файла с id: {id_data_sorted_set}") # noqa
+        cur_date = datetime.now().strftime("%d.%m.%Y")
         return send_file(output,
-                         attachment_filename='data.xlsx',
+                         attachment_filename=f'{cur_date}.xlsx',
                          as_attachment=True), 200
 
     def get_all_channels(self) -> Response:
@@ -299,7 +337,7 @@ class Handler:
         :rtype: Response
         """
         url_params = request.args
-        channels = self.channel_storage.get_all(
+        channels, total = self.channel_storage.get_all(
             url_params.get("min_subcribers", 0, type=int),
             url_params.get("max_subcribers", 9999999999, type=int),
             url_params.get("min_views", 0, type=int),
@@ -310,6 +348,7 @@ class Handler:
             url_params.get("max_cost", 9999999999, type=int),
             url_params.get("tg_link", "%%", type=str) + "%",
             url_params.get("tg_name", "%%", type=str) + "%",
+            url_params.get("category", "%%", type=str) + "%",
             url_params.get("limit", default_limit, type=int),
             url_params.get("offset", default_offset, type=int)
         )
@@ -317,7 +356,9 @@ class Handler:
         channel_res = []
         for item in channels:
             channel_res.append(item.to_json())
+
         res = {"count": len(channels),
+               "total": total,
                "limit": default_limit,
                "items": channel_res}
         return res, 200
@@ -399,6 +440,11 @@ class Handler:
             return {"error": "wrong json format"}, 400
 
     def get_user_channels(self) -> Response:
+        """[summary]
+
+        :return: [description]
+        :rtype: Response
+        """
         args = request.args
         auth_code = request.headers.get('Authorization', None)
 
@@ -412,7 +458,6 @@ class Handler:
 
         channel_res = []
         res = self.channel_storage.get_user_channels(user_id)
-
         if (res is None) or (res is False):
             return {"status": "No channels"}, 400
 
@@ -420,11 +465,45 @@ class Handler:
             channel_res.append(item.to_json())
         return jsonify(channel_res), 200
 
+    def get_admin(self) -> Response:
+        data = request.get_json(force=True)
+        if data is None:
+            return {"error": "empty data"}, 400
+        try:
+            username_json = data['username']
+            password_json = data['password']
+        except KeyError:
+            return {"error": "wrong JSON format"}, 400
+
+        db_user = self.admin_storage.get_admin(username_json)
+        if db_user is None or db_user.password != password_json:
+            return {"error": "wrong user data"}, 401
+
+        curr_time = datetime.now(tz)
+        if (db_user.valid_to is None) or (curr_time > db_user.valid_to):
+            db_user.access_token = self.admin_storage.update_token(db_user)
+        return {"access_token": db_user.access_token}, 201
+
+    @admin_auth_required
+    def admin_delete_channel(self,  id: int) -> Response:
+        _channel = self.channel_storage.get_channel_by_id(id)
+
+        if _channel is None:
+            return {"error": "not found"}, 400
+
+        if self.channel_storage.delete(id):
+            self.logger.info(f"Удалён канал под ID {id}")
+            self.client.leave_channel(_channel.tg_link)
+            return {"success": "channel deleted"}, 200
+        else:
+            return {"error": "channel was not deleted"}, 500
+
 
 def new_handler(logger: logger.Logger, app: Flask, client: TelegramClient,
                 user_storage: user.Storage,
                 channel_storage: channel.Storage,
                 category_storage: category.Storage,
+                admin_storage: admin.Storage,
                 auth_bot: Auth_bot) -> Handler:
     """Метод создания хэндлера
 
@@ -458,5 +537,6 @@ def new_handler(logger: logger.Logger, app: Flask, client: TelegramClient,
         user_storage=user_storage,
         channel_storage=channel_storage,
         category_storage=category_storage,
+        admin_storage=admin_storage,
         auth_bot=auth_bot
     )

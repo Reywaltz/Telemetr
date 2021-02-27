@@ -5,7 +5,7 @@ from pyrogram import Client
 
 from apps.auth_bot import bot
 from apps.telemetr.api import handlers
-from internal.postgres import category, channel, postgres, user
+from internal.postgres import category, channel, postgres, user, admin
 from internal.telegram.client import TelegramClient
 from pkg.log import filelogger
 
@@ -46,6 +46,7 @@ db = postgres.new(cfg=cfgDB, logger=logger)
 user_storage = user.new_storage(db)
 channel_storage = channel.new_storage(db)
 category_storage = category.new_storage(db)
+admin_storage = admin.new_storage(db)
 
 auth_bot = bot.new(telegram_logger, bot_token, user_storage)
 auth_bot.create_hanlders()
@@ -55,12 +56,13 @@ handlers = handlers.new_handler(logger, app,
                                 user_storage,
                                 channel_storage,
                                 category_storage,
+                                admin_storage,
                                 auth_bot)
 
 handlers.create_routes()
 
 if __name__ == "__main__":
     auth_bot.bot.delete_webhook()
-    auth_bot.bot.set_webhook(f'https://gavnishe.tk/api/v1/{bot_token}')
+    auth_bot.bot.set_webhook(f'https://vagu.space/api/v1/{bot_token}')
     app.run(debug=cfg.get("run").get("debug"),
             port=cfg.get("run").get("port"))

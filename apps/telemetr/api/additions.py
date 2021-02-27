@@ -20,6 +20,34 @@ def auth_required(fn):
         request_token = request.headers.get('Authorization').split(' ')[-1]
 
         auth_code = self.user_storage.get_user_by_authcode(request_token)
+        # access_token = self.admin_storage.get_admin_by_access_code(request_token)
+        # if (auth_code is None) and (access_token is None):
+        if auth_code is None:
+            return {"error": "no auth"}, 401
+
+        # if (auth_code.valid_to > datetime.now(timezone)) or (access_token.valid_to > datetime.now(timezone)):
+        if auth_code.valid_to > datetime.now(timezone):
+            return fn(self, **kwargs)
+        else:
+            return {"error": "no auth"}, 401
+
+    return wrapper
+
+
+def admin_auth_required(fn):
+    """Метод декоратор для проверки авторизации пользователя
+    :return: Продолжение / прерывание обращения к API
+    """
+    @wraps(fn)
+    def wrapper(self, **kwargs):
+        if request.headers.get('Authorization') is None:
+            print("1111")
+            return {"error": "no auth"}, 401
+
+        access_token = request.headers.get('Authorization').split(' ')[-1]
+        print(access_token)
+
+        auth_code = self.admin_storage.get_admin_by_token(access_token)
         if auth_code is None:
             return {"error": "no auth"}, 401
 

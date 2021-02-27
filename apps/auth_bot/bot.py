@@ -6,7 +6,6 @@ from datetime import datetime, timedelta
 
 from internal.users import user
 from pkg.log import logger
-from telegram import InlineKeyboardButton, InlineKeyboardMarkup
 from telegram.bot import Bot
 from telegram.ext import CommandHandler
 from telegram.ext.callbackcontext import CallbackContext
@@ -18,7 +17,9 @@ cfg = toml.load("cfg.toml")
 tz_info = cfg.get("timezone").get("tz_info")
 
 tz = ZoneInfo(tz_info)
-url = "https://gavnishe.tk/api/v1/channel"
+url = "https://vagu.space"
+
+response_message = "вы авторизовались 😊\n\nВернитесь на сайт и нажмите на кнопку - «войти в систему»"
 
 
 @dataclass
@@ -40,18 +41,10 @@ class Auth_bot:
         """
         print(context.args)
         user_firstname = update.message.chat.first_name
-        keyboard = [
-                [
-                    InlineKeyboardButton("На сайт",
-                                         url=url),
-                ]
-            ]
-        reply_markup = InlineKeyboardMarkup(keyboard, resize_keyboard=True)
         if context.args == []:
             context.bot.send_message(update.effective_chat.id,
                                      text="Здравствуйте. Для начала авторизации \
-                                          начните на кнопку входа на сайте",
-                                     reply_markup=reply_markup)
+                                          начните на кнопку входа на сайте")
         else:
             site_code = context.args[0]
             try:
@@ -62,8 +55,7 @@ class Auth_bot:
             """Проверка на валидность ключа по формату MD5"""
             if re.findall(r"([a-fA-F\d]{32})", site_code) == []:
                 context.bot.send_message(update.effective_chat.id,
-                                         text=user_firstname + ", Повторите попытку входа через сайт.", # noqa
-                                         reply_markup=reply_markup)
+                                         text=user_firstname + ", Повторите попытку входа через сайт.") # noqa
                 self.logger.info(f"Код {context.args[0]} не прошёл валидацию по регулярному выражению") # noqa 
             else:
                 created_at = datetime.now(tz)
@@ -80,9 +72,7 @@ class Auth_bot:
                     self.logger.info(f"Обновлён ключ пользователя под id {tel_user.telegram_id}") # noqa
 
                 context.bot.send_message(update.effective_chat.id,
-                                         text="Здравствуйте, " + user_firstname + # noqa
-                                              ". Возвращайтесь на сайт",
-                                         reply_markup=reply_markup)
+                                         text=f"{user_firstname}, {response_message}") # noqa
 
     def create_hanlders(self):
         """Метод инициализации хэндлеров бота"""

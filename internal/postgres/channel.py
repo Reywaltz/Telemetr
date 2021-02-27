@@ -5,13 +5,13 @@ from internal.postgres import postgres
 from psycopg2 import IntegrityError
 
 insert_channel_fields = "owner, name, " + \
-                        "tg_link, category, sub_count, " + \
+                        "tg_link, tg_id, category, sub_count, " + \
                         "avg_coverage, er, cpm, post_price, photo_path"
 
 select_all_channel_fields = "id, " + insert_channel_fields
 
 
-default_limit = 15
+default_limit = 5
 default_offset = 0
 
 er_range = "(er between %s and %s)"
@@ -21,6 +21,7 @@ sub_count_range = "(sub_count between %s and %s)"
 post_price_range = "(post_price between %s and %s)"
 tg_link_search = "(tg_link ILIKE %s)"
 tg_name_search = "(name ILIKE %s)"
+category_search = "(category ILIKE %s)"
 limit_value = "%s"
 offset_value = "%s"
 
@@ -37,10 +38,20 @@ class ChannelStorage(channel.Storage):
                           {er_range} AND \
                           {post_price_range} AND \
                           {tg_link_search} AND \
-                          {tg_name_search} \
+                          {tg_name_search} AND \
+                          {category_search} \
                           ORDER BY id \
                           LIMIT {limit_value} \
                           OFFSET {offset_value}"
+
+    get_rows_query = f"SELECT COUNT(*) FROM channels \
+                      WHERE {sub_count_range} AND \
+                      {avg_coverage_range} AND \
+                      {er_range} AND \
+                      {post_price_range} AND \
+                      {tg_link_search} AND \
+                      {tg_name_search} AND \
+                      {category_search}"
 
     get_channel_by_id_query = f"SELECT {select_all_channel_fields} \
                                FROM channels WHERE id = %s"
@@ -49,19 +60,23 @@ class ChannelStorage(channel.Storage):
                                     FROM channels WHERE id IN %s ORDER BY id"
 
     update_channel_fields_query = "UPDATE channels SET sub_count=%s, \
-                                   avg_coverage=%s, er=%s, photo_path=%s \
-                                   WHERE tg_link=%s RETURNING id"
+                                   avg_coverage=%s, er=%s, photo_path=%s, \
+                                   tg_link=%s, cpm=%s \
+                                   WHERE tg_id=%s RETURNING id"
 
     update_post_price_query = "UPDATE channels SET post_price=%s \
                               WHERE id = %s RETURNING ID"
 
     insert_channel_query = "INSERT INTO channels (" + insert_channel_fields + " ) \
-                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s)"
+                            VALUES (%s, %s, %s, %s, %s, %s, %s, %s, %s, %s, %s)" # noqa
 
     get_user_channels_query = f"SELECT {select_all_channel_fields} FROM channels \
                               WHERE owner = %s"
 
     delete_channel_query = "DELETE FROM channels WHERE id=%s RETURNING ID"
+
+    get_channel_by_teleg_id_query = f"SELECT {select_all_channel_fields} \
+                                     FROM channels WHERE tg_id = %s"
 
     def get_all(self,
                 min_subcribers=0,
@@ -74,6 +89,7 @@ class ChannelStorage(channel.Storage):
                 max_cost=9999999999,
                 tg_link="%%",
                 name="%%",
+                category="%%",
                 limit=default_limit,
                 offset=default_offset) -> list[channel.Channel]:
         """Метод получения списка каналов из БД с параметрами фильтрации
@@ -123,12 +139,29 @@ class ChannelStorage(channel.Storage):
                                                  max_cost,
                                                  tg_link,
                                                  name,
+                                                 category,
                                                  limit,
                                                  offset))
         row = cursor.fetchall()
         ch_list = scan_channels(row)
 
-        return ch_list
+        cursor.execute(self.get_rows_query, (min_subcribers,
+                                             max_subscribers,
+                                             min_views,
+                                             max_views,
+                                             min_er,
+                                             max_er,
+                                             min_cost,
+                                             max_cost,
+                                             tg_link,
+                                             name,
+                                             category,
+                                             ))
+
+        total = cursor.fetchone()[0]
+        # print(total)
+
+        return ch_list, total
 
     def insert(self, channel: channel.Channel) -> bool:
         """Метод добавления канала в БД
@@ -144,6 +177,7 @@ class ChannelStorage(channel.Storage):
             cursor.execute(self.insert_channel_query, (channel.username,
                                                        channel.name,
                                                        channel.tg_link,
+                                                       channel.tg_id,
                                                        channel.category,
                                                        channel.sub_count,
                                                        channel.avg_coverage,
@@ -188,11 +222,15 @@ class ChannelStorage(channel.Storage):
                                                    channel.avg_coverage,
                                                    channel.er,
                                                    channel.photo_path,
-                                                   channel.tg_link
+                                                   channel.tg_link,
+                                                   channel.cpm,
+                                                   channel.tg_id,
                                                    ))
 
             self.db.session.commit()
-        except Exception:
+
+        except Exception as e:
+            print(e)
             self.db.session.rollback()
 
     def update_post_price(self, channel: channel.Channel):
@@ -261,17 +299,18 @@ class ChannelStorage(channel.Storage):
             self.db.session.rollback()
             return False
 
-    def get_user_channels(self, id: int):
+    def get_user_channels(self, user_id: int):
         """Получения списка каналов пользователя
 
-        :param id: ID пользователя
-        :type id: int
+        :param id:
+            ID пользователя
+            :type id: int
         :return: Список каналов
         :rtype: List[Channel]
         """
         cursor = self.db.session.cursor()
         try:
-            cursor.execute(self.get_user_channels_query, (id, ))
+            cursor.execute(self.get_user_channels_query, (user_id, ))
         except Exception:
             self.db.session.rollback()
             return False
@@ -281,12 +320,34 @@ class ChannelStorage(channel.Storage):
         else:
             return scan_channels(data)
 
+    def get_channel_by_teleg_id(self, teleg_id: str):
+        """Получение канала по Telegram ID в базе данных
+
+        :param teleg_id:
+            ID телеграмма
+            :type teleg_id: str
+        :return: Объект Telegrma канала
+        :rtype: channel.Channel
+        """
+        cursor = self.db.session.cursor()
+        try:
+            cursor.execute(self.get_channel_by_teleg_id_query, (teleg_id, ))
+            data = cursor.fetchone()
+            if data is not None:
+                return scan_channel(data)
+            else:
+                return []
+        except Exception:
+            self.db.session.rollback()
+            return False
+
 
 def scan_channel(data: tuple) -> channel.Channel:
     """Преобразование SQL ответа в объект Channel
 
-    :param data: SQL ответ
-    :type data: tuple
+    :param data:
+        SQL ответ
+        :type data: tuple
     :return: Объект канала
     :rtype: Channel
     """
@@ -295,13 +356,14 @@ def scan_channel(data: tuple) -> channel.Channel:
         username=data[1],
         name=data[2],
         tg_link=data[3],
-        category=data[4],
-        sub_count=data[5],
-        avg_coverage=data[6],
-        er=data[7],
-        cpm=data[8],
-        post_price=data[9],
-        photo_path=data[10]
+        tg_id=data[4],
+        category=data[5],
+        sub_count=data[6],
+        avg_coverage=data[7],
+        er=data[8],
+        cpm=data[9],
+        post_price=data[10],
+        photo_path=data[11]
     )
 
 
