@@ -1,5 +1,5 @@
 *.toml
-*.log
+logs/*.log
 *.dump
 telemetr.sql
 venv/
