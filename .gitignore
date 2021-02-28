@@ -1,5 +1,7 @@
 *.toml
 *.log
+*.dump
+telemetr.sql
 venv/
 __pycache__/
 Telemetr.session

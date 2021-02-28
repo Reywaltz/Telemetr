@@ -1,12 +1,12 @@
 import datetime
 from dataclasses import dataclass
+from zoneinfo import ZoneInfo
 
 from internal.channels import channel
 from internal.telegram.client import TelegramClient
 from pkg.log import logger
-from pyrogram.types import Dialog, Message
 from pyrogram.errors.exceptions import ChannelPrivate
-from zoneinfo import ZoneInfo
+from pyrogram.types import Dialog, Message
 
 tz = ZoneInfo("Europe/Moscow")
 
@@ -31,7 +31,7 @@ class Fetcher:
         async with self.tg_client.client:
             dialogs = await self.tg_client.client.get_dialogs()
             for dialog in dialogs:
-                if dialog.chat.type == "channel" and dialog.chat.title == "Gmusic": # noqa
+                if dialog.chat.type == "channel":
                     invite_link = await self.get_chat_info(dialog.chat.id)
                     try:
                         try:
@@ -182,7 +182,7 @@ class Fetcher:
         """
         for current_channel in channel_list:
             _channel = self.channel_storage.get_channel_by_teleg_id(current_channel.tg_id) # noqa
-            print(current_channel, _channel)
+            # print(current_channel, _channel)
             if _channel == []:
                 pass
             else:

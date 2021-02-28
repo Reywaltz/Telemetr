@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from internal.postgres import postgres
 from internal.users import user
+from pkg.log import logger
 from psycopg2.errors import UniqueViolation
 
 insert_user_field = "username, telegram_id, auth_code, created_at, valid_to"
@@ -12,6 +13,7 @@ class UserStorage(user.Storage):
     """Реализация абстрактного класса Storage пользователя"""
 
     db: postgres.DB
+    logger: logger.Logger
 
     get_users_query = "SELECT * FROM users"
 
@@ -43,9 +45,11 @@ class UserStorage(user.Storage):
             return True
         except UniqueViolation:
             self.db.session.rollback()
+            self.logger.info(f"Пользователь под ID:{user.id} уже существует")
             return False
-        except Exception:
+        except Exception as e:
             self.db.session.rollback()
+            self.logger.error(f"Ошибка при создании пользователя - {e}")
             return False
 
     def get_all(self) -> list[user.User]:
@@ -149,7 +153,7 @@ def scan_users(data: list[tuple]) -> list[user.User]:
     return users
 
 
-def new_storage(db: postgres.DB) -> UserStorage:
+def new_storage(db: postgres.DB, logger: logger.Logger) -> UserStorage:
     """Функция инициализации хранилища пользователей
 
     :param db:
@@ -158,4 +162,4 @@ def new_storage(db: postgres.DB) -> UserStorage:
     :return: объект хранилища продуктов
     :rtype: User
     """
-    return UserStorage(db=db)
+    return UserStorage(db=db, logger=logger)

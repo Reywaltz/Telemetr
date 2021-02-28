@@ -1,10 +1,9 @@
-from psycopg2 import IntegrityError
-
 from dataclasses import dataclass
 
 from internal.categories import category
 from internal.postgres import postgres
-
+from pkg.log import logger
+from psycopg2 import IntegrityError
 
 category_fields = "name"
 
@@ -14,6 +13,7 @@ class CategoryStorage(category.Storage):
     """Реализация абстрактного класса Storage категорий"""
 
     db: postgres.DB
+    logger: logger.Logger
 
     get_categories_query = "SELECT name FROM categories ORDER BY name"
 
@@ -46,9 +46,11 @@ class CategoryStorage(category.Storage):
             cursor = self.db.session.cursor()
             cursor.execute(self.insert_category_query, (category.name, ))
             self.db.session.commit()
+            self.logger.info(f"Добавлена категория: {category.name}")
             return True
         except IntegrityError:
             self.db.session.rollback()
+            self.logger.error(f"Ошибка при добавлении категории {category.name}. Такая категория уже существует") # noqa
             return False
 
 
@@ -83,7 +85,7 @@ def scan_categories(data: list[tuple]) -> list[category.Category]:
     return categories
 
 
-def new_storage(db: postgres.DB) -> CategoryStorage:
+def new_storage(db: postgres.DB, logger: logger.Logger) -> CategoryStorage:
     """Функция инициализации хранилища категорий
 
     :param db:
@@ -92,4 +94,4 @@ def new_storage(db: postgres.DB) -> CategoryStorage:
     :return: объект хранилища категорий
     :rtype: Category
     """
-    return CategoryStorage(db=db)
+    return CategoryStorage(db=db, logger=logger)

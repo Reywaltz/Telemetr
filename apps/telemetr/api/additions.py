@@ -1,9 +1,10 @@
 from datetime import datetime
 from functools import wraps
+from zoneinfo import ZoneInfo
+
 from flask import request
 from pyrogram import Client
 from pyrogram.errors import BadRequest
-from zoneinfo import ZoneInfo
 
 timezone = ZoneInfo('Europe/Moscow')
 
@@ -20,12 +21,9 @@ def auth_required(fn):
         request_token = request.headers.get('Authorization').split(' ')[-1]
 
         auth_code = self.user_storage.get_user_by_authcode(request_token)
-        # access_token = self.admin_storage.get_admin_by_access_code(request_token)
-        # if (auth_code is None) and (access_token is None):
         if auth_code is None:
             return {"error": "no auth"}, 401
 
-        # if (auth_code.valid_to > datetime.now(timezone)) or (access_token.valid_to > datetime.now(timezone)):
         if auth_code.valid_to > datetime.now(timezone):
             return fn(self, **kwargs)
         else:

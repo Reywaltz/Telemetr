@@ -2,6 +2,7 @@ from dataclasses import dataclass
 
 from internal.channels import channel
 from internal.postgres import postgres
+from pkg.log import logger
 from psycopg2 import IntegrityError
 
 insert_channel_fields = "owner, name, " + \
@@ -31,6 +32,7 @@ class ChannelStorage(channel.Storage):
     """Реализация абстрактного класса Storage канала"""
 
     db: postgres.DB
+    logger: logger.Logger
 
     get_channels_query = f"SELECT {select_all_channel_fields} FROM channels \
                           WHERE {sub_count_range} AND \
@@ -159,7 +161,6 @@ class ChannelStorage(channel.Storage):
                                              ))
 
         total = cursor.fetchone()[0]
-        # print(total)
 
         return ch_list, total
 
@@ -186,9 +187,11 @@ class ChannelStorage(channel.Storage):
                                                        channel.post_price,
                                                        channel.photo_path))
             self.db.session.commit()
+            self.logger.info(f"Канала ID{channel.id} добавлен")
             return True
         except IntegrityError:
             self.db.session.rollback()
+            self.logger.info(f"Канал ID{channel.id} уже существует")
             return False
 
     def get_channel_by_id(self, id: int) -> channel.Channel:
@@ -230,7 +233,7 @@ class ChannelStorage(channel.Storage):
             self.db.session.commit()
 
         except Exception as e:
-            print(e)
+            self.logger.error(f"Ошибка обновления данных с фетчера - {e}")
             self.db.session.rollback()
 
     def update_post_price(self, channel: channel.Channel):
@@ -250,8 +253,9 @@ class ChannelStorage(channel.Storage):
             else:
                 self.db.session.commit()
                 return True
-        except Exception:
+        except Exception as e:
             self.db.session.rollback()
+            self.logger.error(f"Ошибка обновления цены данных за пост - {e}")
             return False
 
     def get_channels_to_doc(self, id_data: tuple) -> list[channel.Channel]:
@@ -269,6 +273,7 @@ class ChannelStorage(channel.Storage):
             cursor.execute(self.get_channels_in_range_query, (id_data, ))
         except Exception:
             self.db.session.rollback()
+            self.logger.error("Ошибка получения данных для скачивания - {e}")
             return None
         row = cursor.fetchall()
         if row is not None:
@@ -294,9 +299,11 @@ class ChannelStorage(channel.Storage):
                 return False
             else:
                 self.db.session.commit()
+                self.logger.info(f"Канал под ID: {id} удалён")
                 return True
-        except Exception:
+        except Exception as e:
             self.db.session.rollback()
+            self.logger.error(f"Ошибка при удалении канала под ID: {id} - {e}")
             return False
 
     def get_user_channels(self, user_id: int):
@@ -311,8 +318,9 @@ class ChannelStorage(channel.Storage):
         cursor = self.db.session.cursor()
         try:
             cursor.execute(self.get_user_channels_query, (user_id, ))
-        except Exception:
+        except Exception as e:
             self.db.session.rollback()
+            self.logger.error(f"Ошибка при получения списка каналов пользователя ID: {user_id}- {e}") # noqa
             return False
         data = cursor.fetchall()
         if data == []:
@@ -337,8 +345,9 @@ class ChannelStorage(channel.Storage):
                 return scan_channel(data)
             else:
                 return []
-        except Exception:
+        except Exception as e:
             self.db.session.rollback()
+            self.logger.error(f"Ошибка при получении данных по каналу ID: {teleg_id} - {e}") # noqa
             return False
 
 
@@ -383,7 +392,7 @@ def scan_channels(data: list[tuple]) -> list[channel.Channel]:
     return channels
 
 
-def new_storage(db: postgres.DB) -> ChannelStorage:
+def new_storage(db: postgres.DB, logger: logger.Logger) -> ChannelStorage:
     """Функция инициализации хранилища канала
 
     :param db: объект базы данных
@@ -391,4 +400,4 @@ def new_storage(db: postgres.DB) -> ChannelStorage:
     :return: объект хранилища каналов
     :rtype: User
     """
-    return ChannelStorage(db=db)
+    return ChannelStorage(db=db, logger=logger)

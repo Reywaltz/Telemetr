@@ -3,6 +3,7 @@ import time
 import toml
 from pyrogram import Client
 
+from app import db_logger
 from apps.fetcher import fetcher
 from internal.postgres import channel, postgres
 from internal.telegram.client import TelegramClient
@@ -34,7 +35,7 @@ _client = Client(app_name, api_id, api_hash)
 client = TelegramClient(_client)
 
 db = postgres.new(cfg=cfgDB, logger=logger)
-channel_storage = channel.new_storage(db)
+channel_storage = channel.new_storage(db=db, logger=db_logger)
 
 fetcher = fetcher.Fetcher(logger, client, channel_storage)
 

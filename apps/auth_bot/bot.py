@@ -1,9 +1,9 @@
 import re
-import toml
-
 from dataclasses import dataclass
 from datetime import datetime, timedelta
+from zoneinfo import ZoneInfo
 
+import toml
 from internal.users import user
 from pkg.log import logger
 from telegram.bot import Bot
@@ -11,7 +11,6 @@ from telegram.ext import CommandHandler
 from telegram.ext.callbackcontext import CallbackContext
 from telegram.ext.dispatcher import Dispatcher
 from telegram.update import Update
-from zoneinfo import ZoneInfo
 
 cfg = toml.load("cfg.toml")
 tz_info = cfg.get("timezone").get("tz_info")
@@ -19,7 +18,7 @@ tz_info = cfg.get("timezone").get("tz_info")
 tz = ZoneInfo(tz_info)
 url = "https://vagu.space"
 
-response_message = "вы авторизовались 😊\n\nВернитесь на сайт и нажмите на кнопку - «войти в систему»"
+response_message = "вы авторизовались 😊\n\nВернитесь на сайт и нажмите на кнопку - «войти в систему»" # noqa
 
 
 @dataclass
