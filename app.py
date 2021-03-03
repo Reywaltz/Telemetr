@@ -63,7 +63,7 @@ handlers = handlers.new_handler(logger, app,
 handlers.create_routes()
 
 if __name__ == "__main__":
-    auth_bot.bot.delete_webhook()
-    auth_bot.bot.set_webhook(f'https://vagu.space/api/v1/{bot_token}')
+    # auth_bot.bot.delete_webhook()
+    # auth_bot.bot.set_webhook(f'https://vagu.space/api/v1/{bot_token}')
     app.run(debug=cfg.get("run").get("debug"),
             port=cfg.get("run").get("port"))

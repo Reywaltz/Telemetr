@@ -1,5 +1,5 @@
 import logging
-
+import os
 from pkg.log.logger import Logger
 
 
@@ -37,6 +37,8 @@ def new_logger(logger_name: str) -> STDLogger:
     """
     file_logger = logging.getLogger(logger_name)
     file_logger.setLevel(logging.DEBUG)
+    if not os.path.exists(os.path.join(os.getcwd(), 'logs')):
+        os.mkdir('logs')
     fl = logging.FileHandler(f"logs/{logger_name}.log", encoding="UTF-8")
     formatter = logging.Formatter("%(asctime)s - %(levelname)s - %(message)s")
     fl.setFormatter(formatter)

@@ -6,6 +6,7 @@ from tempfile import NamedTemporaryFile
 from zoneinfo import ZoneInfo
 
 import openpyxl
+from pyrogram.errors import UserNotParticipant
 import toml
 from apps.auth_bot.bot import Auth_bot
 from apps.telemetr.api.additions import admin_auth_required, auth_required
@@ -63,7 +64,7 @@ class Handler:
                               self.add_channel,
                               methods=["POST"])
 
-        self.app.add_url_rule("/api/v1/channel/<id>",
+        self.app.add_url_rule("/api/v1/channel",
                               "delete_channel",
                               self.delete_channel,
                               methods=["DELETE"])
@@ -148,26 +149,36 @@ class Handler:
         return '', 200
 
     @auth_required
-    def delete_channel(self, id: int) -> Response:
+    def delete_channel(self) -> Response:
         """Метод удаления канала
 
-        :param id:
-             ID канала в базе
-            :type id: int
         :return: JSON ответ о статусе запроса
         :rtype: Response
         """
-        _channel = self.channel_storage.get_channel_by_id(id)
+        req = request.get_json(force=True)
+        id_list = req.get("id")
+        if id_list is None or id_list == []:
+            return {"error": "Bad request"}, 400
 
-        if _channel is None:
-            return {"error": "not found"}, 400
+        for id in id_list:
+            _channel = self.channel_storage.get_channel_by_id(id)
+            if _channel is None:
+                self.logger.info(f"Канал ID:{id} не существует")
+                if len(id_list) == 1:
+                    return {"error": "not exists"}, 400
+                continue
 
-        if self.channel_storage.delete(id):
-            self.logger.info(f"Удалён канал под ID {id}")
-            self.client.leave_channel(_channel.tg_link)
-            return {"success": "channel deleted"}, 200
-        else:
-            return {"error": "channel was not deleted"}, 500
+            if self.channel_storage.delete(id):
+                self.logger.info(f"Удалён канал под ID {id}")
+                try:
+                    self.client.leave_channel(int(_channel.tg_id))
+                except UserNotParticipant:
+                    self.logger.info(f"Канал {_channel.name} уже был покинут клиентом") # noqa
+            else:
+                self.logger.error(f"Канал под ID {id} не удалён")
+                return {"error": "can't remove channel"}, 500
+
+        return {"success": "deleted"}, 200
 
     @auth_required
     def add_channel(self) -> Response:

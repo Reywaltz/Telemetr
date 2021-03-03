@@ -22,15 +22,15 @@ class TelegramClient:
         else:
             return None
 
-    def leave_channel(self, channel_login: str):
+    def leave_channel(self, channel_id: int):
         """Метод отписки от канала
 
-        :param channel_login:
+        :param channel_id:
             Логин канала
-            :type channel_login: str
+            :type channel_id: int
         """
         with self.client:
-            self.client.leave_chat(str(channel_login), delete=True)
+            self.client.leave_chat(channel_id, delete=True)
 
     def get_chat(self, channel_login: str):
         """Метод проверки существования чата в Telegram по ссылке
