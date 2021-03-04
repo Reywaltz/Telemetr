@@ -49,7 +49,7 @@ class Handler:
                               self.get_channel,
                               methods=["GET"])
 
-        self.app.add_url_rule("/api/v1/channel/<int:id>",
+        self.app.add_url_rule("/api/v1/channel",
                               "update_channel",
                               self.update_channel,
                               methods=["PUT"])
@@ -233,7 +233,7 @@ class Handler:
                             self.logger.info(f"Добавлен канал. ID: {res['id']}, логин {res['username']}") # noqa
                             return {"success": "channel added"}, 200
                         else:
-                            self.client.leave_channel(channel_login)
+                            self.client.leave_channel(int(tg_id))
                             return {"error": "inserttion error. \
                                     Channel alreay exists"}, 400
 
@@ -246,37 +246,47 @@ class Handler:
                 return {"error": "wrong json format"}, 400
 
     @auth_required
-    def update_channel(self, id: int) -> Response:
+    def update_channel(self) -> Response:
         """Метод обновления данных о канале
 
-        :param id:
-            ID канала
-            :type id: int
         :return: Статус операции
         :rtype: JSON
         """
         data = request.get_json()
-        if data is None:
-            return {"error": "empty data"}, 400
-        else:
+        if (data is None) or (data == []):
+            return {"error": "wrong json format"}, 400
+
+        for item in data:
             try:
-                _channel = channel.Channel(id=id,
-                                           username="",
-                                           name="",
-                                           tg_link="",
-                                           category="",
-                                           sub_count="",
-                                           avg_coverage=0,
-                                           er=0,
-                                           cpm=0,
-                                           post_price=data["post_price"])
-                if self.channel_storage.update_post_price(_channel):
-                    self.logger.info(f"Обновлен канал ID: {_channel.id}")
-                    return {"success": "post_price updated"}, 201
-                else:
-                    return {"error": "channel doesn't exist"}, 404
-            except KeyError:
-                return {"error": "wrong json format"}, 400
+                channel_id = int(item.get("id", -1))
+                new_price = int(item.get("post_price", -1))
+            except ValueError:
+                channel_id = -1
+                new_price = -1
+
+            if (channel_id == -1) or ((new_price < 0) or (new_price is None)):
+                if len(data) == 1:
+                    return {"error": "bad request"}, 400
+                continue
+
+            _channel = channel.Channel(id=channel_id,
+                                       username='',
+                                       name='',
+                                       tg_link='',
+                                       tg_id='',
+                                       category='',
+                                       sub_count=0,
+                                       avg_coverage=0,
+                                       er=0,
+                                       cpm=0,
+                                       post_price=new_price,
+                                       photo_path='')
+
+            if self.channel_storage.update_post_price(_channel):
+                self.logger.info(f"Канал ID:{_channel.id} обновлён")
+            else:
+                self.logger.info(f"Канал ID:{_channel.id} не получилось обновить") # noqa
+        return {"success": "updated"}, 200
 
     def send_channels_data(self) -> Response:
         """Метод отправки EXEL файла пользователю
