@@ -325,6 +325,10 @@ class Handler:
             sheet['G1'] = "CPM, руб."
 
             for index, item in enumerate(channels):
+                link_check = re.findall("t.me/joinchat/", item.tg_link)
+                if link_check == []:
+                    item.tg_link = "https://t.me/" + item.tg_link
+                print(item.tg_link)
                 sheet.append((item.name,
                              item.tg_link,
                              item.sub_count,
@@ -333,13 +337,7 @@ class Handler:
                              item.cpm,
                              item.post_price))
 
-                link_check = re.findall("t.me/joinchat/", item.tg_link)
-
-                if link_check == []: # noqa
-                    new_hyperlink = channel_invite_prefix + item.tg_link
-                    sheet[f"B{index+2}"].hyperlink = new_hyperlink
-                else:
-                    sheet[f"B{index+2}"].hyperlink = item.tg_link
+                sheet[f"B{index+2}"].hyperlink = item.tg_link
                 sheet[f"B{index+2}"].style = 'Hyperlink'
 
             workbook.save(tmp.name)
