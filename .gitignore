@@ -1,5 +1,11 @@
-info.log
-cfg.toml
+*.toml
+logs/*.log
+*.dump
+telemetr.sql
 venv/
 __pycache__/
-Telemetr_auth_bot/
+Telemetr.session
+Telemetr.session-journal
+channel_img/
+.vscode/
+build/

@@ -1,8 +1,7 @@
-import psycopg2
-
 from dataclasses import dataclass
 
-from Telemetr_app.pkg.log import logger
+import psycopg2
+from pkg.log import logger
 
 
 @dataclass
@@ -28,10 +27,12 @@ class DB:
 def new(cfg: Config, logger: logger.Logger) -> DB:
     """Создание нового подключения к базе данных
 
-    :param cfg: параметры подключения к базе данных
-    :type cfg: Config
-    :param logger: логгер проекта
-    :type logger: logger.Logger
+    :param cfg:
+        Параметры подключения к базе данных
+        :type cfg: Config
+    :param logger:
+        Логгер проекта
+        :type logger: logger.Logger
     :return: объект подключения к базе данных
     :rtype: DB
     """

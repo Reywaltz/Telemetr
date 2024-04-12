@@ -7,31 +7,35 @@ class Logger(ABC):
     def info(self, msg: str):
         """Логирование информационных сообщений
 
-        :param msg: Сообщение
-        :type msg: str
+        :param msg:
+            Сообщение
+            :type msg: str
         """
         pass
 
     def warning(self, msg: str):
         """Логирование сообщений предупреждений
 
-        :param msg: Сообщение
-        :type msg: str
+        :param msg:
+            Сообщение
+            :type msg: str
         """
         pass
 
     def error(self, msg: str):
         """Логирование сообщений ошибок
 
-        :param msg: Сообщение
-        :type msg: str
+        :param msg:
+            Сообщение
+            :type msg: str
         """
         pass
 
     def critical(self, msg: str):
         """Логирование сообщений критических ошибок
 
-        :param msg: Сообщение
-        :type msg: str
+        :param msg:
+            Сообщение
+            :type msg: str
         """
         pass
